@@ -30,3 +30,14 @@
 *.exe
 *.out
 *.app
+
+# Build directories
+build*/
+
+# CMake
+CMakeUserPresets.json
+CMakeFiles/
+cmake_install.cmake
+
+# Qt
+.qt/

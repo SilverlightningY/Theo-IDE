@@ -1,0 +1,3 @@
+[submodule "src/libtheo"]
+	path = src/libtheo
+	url = ../libtheo
