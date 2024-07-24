@@ -1,11 +1,12 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.25)
 
-project(TheoIDE VERSION 0.1 LANGUAGES CXX)
+project(TheoIDE VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
-find_package(Qt6 6.7 COMPONENTS Quick Core Sql REQUIRED)
+find_package(Qt6 6.6 COMPONENTS Quick Core Sql REQUIRED)
 
 qt_policy(SET QTP0001 NEW)
 
