@@ -41,3 +41,4 @@ cmake_install.cmake
 
 # Qt
 .qt/
+.qmlls.ini
