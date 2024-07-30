@@ -2,13 +2,13 @@ cmake_minimum_required(VERSION 3.25)
 
 project(TheoIDE VERSION 0.1.0 LANGUAGES CXX)
 
-set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
 find_package(Qt6 6.6 COMPONENTS Quick Core Sql REQUIRED)
 
-qt_policy(SET QTP0001 NEW)
+qt_standard_project_setup(REQUIRES 6.6)
+qt_policy(SET QTP0003 NEW)
 
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
