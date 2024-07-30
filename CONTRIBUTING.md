@@ -2,11 +2,11 @@
 
 ## Versioning
 
-The versioning scheme follows the [SemVer]("https://semver.org/") specification.
+The versioning scheme follows the [SemVer](https://semver.org/) specification.
 
 ## Git Commit Message Convention
 
-The commit messages should be formatted according to the guidelines by [conventionalcommits.org]("https://www.conventionalcommits.org/en/v1.0.0/"). The allowed commit types are:
+The commit messages should be formatted according to the guidelines by [conventionalcommits.org](https://www.conventionalcommits.org/en/v1.0.0/). The allowed commit types are:
 
 - `feat`: Implement a feature. The `MINOR` version must be increased.
 - `fix`: Fix a bug. The `PATCH` version must be increased.
