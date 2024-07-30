@@ -7,9 +7,6 @@
 #include <QtCore>
 #include <QtQml>
 
-#include "models/sqlcontactmodel.hpp"
-#include "models/sqlconversationmodel.hpp"
-
 using namespace Qt::Literals::StringLiterals;
 
 static void connectToDatabase() {
@@ -40,11 +37,6 @@ static void connectToDatabase() {
 int main(int argc, char *argv[]) {
   QGuiApplication app(argc, argv);
 
-  qmlRegisterType<SqlContactModel>("io.qt.examples.chattutorial", 1, 0,
-                                   "SqlContactModel");
-  qmlRegisterType<SqlConversationModel>("io.qt.examples.chattutorial", 1, 0,
-                                        "SqlConversationModel");
-
   connectToDatabase();
 
   QTranslator translator;
@@ -58,7 +50,7 @@ int main(int argc, char *argv[]) {
   }
 
   QQmlApplicationEngine engine;
-  const QUrl url(u"qrc:/qt/qml/QtTest/main.qml"_s);
+  const QUrl url(u"qrc:/qt/qml/app/main.qml"_s);
   QObject::connect(
       &engine, &QQmlApplicationEngine::objectCreated, &app,
       [url](QObject *obj, const QUrl &objUrl) {

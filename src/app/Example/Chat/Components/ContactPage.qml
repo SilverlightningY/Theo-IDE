@@ -1,6 +1,7 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
-import io.qt.examples.chattutorial
+import Example.Chat.Components
 
 Page {
     id: root
@@ -15,26 +16,25 @@ Page {
         rightMargin: 48
         spacing: 20
 
-        model: SqlContactModel {
-        }
+        model: SqlContactModel {}
 
         delegate: ItemDelegate {
-            text: model.display
+            required property string modelData
+
+            text: modelData
             width: listView.width - listView.leftMargin - listView.rightMargin
             height: avatar.implicitHeight
             leftPadding: avatar.implicitWidth + 32
-            onClicked: root.StackView.view.push("ConversationPage.qml", {
-                "inConversationWith": model.display
+            onClicked: root.StackView.view.push("qrc:/qt/qml/Example/Chat/Components/ConversationPage.qml", {
+                "inConversationWith": modelData
             })
 
             Image {
                 id: avatar
 
-                source: "qrc:/qt/qml/QtTest/assets/images/" + model.display.replace(" ", "_") + ".png"
+                source: "qrc:/qt/qml/Example/Chat/Components/assets/images/" + parent.modelData.replace(" ", "_") + ".png"
             }
-
         }
-
     }
 
     header: ToolBar {
@@ -43,7 +43,5 @@ Page {
             font.pixelSize: 20
             anchors.centerIn: parent
         }
-
     }
-
 }

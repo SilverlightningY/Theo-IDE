@@ -1,7 +1,8 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import io.qt.examples.chattutorial
+import Example.Chat.Components
 
 Page {
     id: root
@@ -23,11 +24,18 @@ Page {
             spacing: 12
 
             model: SqlConversationModel {
-                recipient: inConversationWith
+                recipient: root.inConversationWith
             }
 
             delegate: Column {
-                readonly property bool sentByMe: model.recipient !== "Me"
+                id: messageDelegate
+
+                required property string author
+                required property string recipient
+                required property string timestamp
+                required property string message
+
+                readonly property bool sentByMe: recipient !== "Me"
 
                 anchors.right: sentByMe ? listView.contentItem.right : undefined
                 spacing: 6
@@ -36,46 +44,41 @@ Page {
                     id: messageRow
 
                     spacing: 6
-                    anchors.right: sentByMe ? parent.right : undefined
+                    anchors.right: messageDelegate.sentByMe ? parent.right : undefined
 
                     Image {
                         id: avatar
 
-                        source: !sentByMe ? "qrc:/qt/qml/QtTest/assets/images/" + model.author.replace(" ", "_") + ".png" : ""
+                        source: !messageDelegate.sentByMe ? "qrc:/qt/qml/Example/Chat/Components/assets/images/" + messageDelegate.author.replace(" ", "_") + ".png" : ""
                     }
 
                     Rectangle {
-                        width: Math.min(messageText.implicitWidth + 24, listView.width - (!sentByMe ? avatar.width + messageRow.spacing : 0))
+                        width: Math.min(messageText.implicitWidth + 24, listView.width - (!messageDelegate.sentByMe ? avatar.width + messageRow.spacing : 0))
                         height: messageText.implicitHeight + 24
-                        color: sentByMe ? "lightgray" : "steelblue"
+                        color: messageDelegate.sentByMe ? "lightgray" : "steelblue"
 
                         Label {
                             id: messageText
 
-                            text: model.message
-                            color: sentByMe ? "black" : "white"
+                            text: messageDelegate.message
+                            color: messageDelegate.sentByMe ? "black" : "white"
                             anchors.fill: parent
                             anchors.margins: 12
                             wrapMode: Label.Wrap
                         }
-
                     }
-
                 }
 
                 Label {
                     id: timestampText
 
-                    text: Qt.formatDateTime(model.timestamp, "d MMM hh:mm")
+                    text: Qt.formatDateTime(messageDelegate.timestamp, "d MMM hh:mm")
                     color: "lightgray"
-                    anchors.right: sentByMe ? parent.right : undefined
+                    anchors.right: messageDelegate.sentByMe ? parent.right : undefined
                 }
-
             }
 
-            ScrollBar.vertical: ScrollBar {
-            }
-
+            ScrollBar.vertical: ScrollBar {}
         }
 
         Pane {
@@ -102,15 +105,12 @@ Page {
                     enabled: messageField.length > 0
                     Layout.fillWidth: false
                     onClicked: {
-                        listView.model.sendMessage(inConversationWith, messageField.text);
+                        listView.model.sendMessage(root.inConversationWith, messageField.text);
                         messageField.text = "";
                     }
                 }
-
             }
-
         }
-
     }
 
     header: ToolBar {
@@ -125,11 +125,9 @@ Page {
         Label {
             id: pageTitle
 
-            text: inConversationWith
+            text: root.inConversationWith
             font.pixelSize: 20
             anchors.centerIn: parent
         }
-
     }
-
 }

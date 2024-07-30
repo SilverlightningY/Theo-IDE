@@ -1,33 +1,24 @@
-qt_add_executable(TheoIDEApp
-    main.cpp
-    models/sqlcontactmodel.cpp
-    models/sqlcontactmodel.hpp
-    models/sqlconversationmodel.cpp
-    models/sqlconversationmodel.hpp
-)
+qt_add_executable(TheoIDEApp main.cpp)
 
-set(QML_COMPONENTS components/ContactPage.qml components/ConversationPage.qml)
-
-set(IMAGE_ASSETS
-    assets/images/Albert_Einstein.png
-    assets/images/Ernest_Hemingway.png
-    assets/images/Hans_Gude.png
-)
+if(CMAKE_BUILD_TYPE STREQUAL Debug)
+    target_compile_definitions(TheoIDEApp PRIVATE QT_QML_DEBUG)
+endif()
 
 qt_add_qml_module(TheoIDEApp
-    URI QtTest
     VERSION 1.0
+    URI app
     QML_FILES
-    main.qml
-    ${QML_COMPONENTS}
-    RESOURCES
-    ${IMAGE_ASSETS}
+        main.qml
+    IMPORTS
+        QtQuick
+        QtQuick.Controls
+        Example.Chat.Components
 )
 
 set_target_properties(
     TheoIDEApp
     PROPERTIES
-        MACOSX_BUNDLE_GUI_IDENTIFIER io.github.theo-ide.theo-ide
+        MACOSX_BUNDLE_GUI_IDENTIFIER io.github.Theo_IDE.Theo_IDE
         MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
         MACOSX_BUNDLE_SHORT_VERSION_STRING
             ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
@@ -36,9 +27,11 @@ set_target_properties(
         CXX_STANDARD 20
 )
 
+add_subdirectory(Example/Chat/Components)
+
 target_link_libraries(
     TheoIDEApp
-    PRIVATE TheoVM TheoC Qt6::Quick Qt6::Core Qt6::Sql
+    PRIVATE TheoVM TheoC ExampleChatComponents Qt6::Quick Qt6::Core Qt6::Sql
 )
 
 install(

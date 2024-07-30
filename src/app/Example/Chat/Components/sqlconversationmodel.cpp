@@ -84,10 +84,10 @@ QVariant SqlConversationModel::data(const QModelIndex &index, int role) const {
 
 QHash<int, QByteArray> SqlConversationModel::roleNames() const {
   QHash<int, QByteArray> names;
-  names[Qt::UserRole] = "author";
-  names[Qt::UserRole + 1] = "recipient";
-  names[Qt::UserRole + 2] = "timestamp";
-  names[Qt::UserRole + 3] = "message";
+  names[AuthorRole] = "author";
+  names[RecipientRole] = "recipient";
+  names[TimestampRole] = "timestamp";
+  names[MessageRole] = "message";
   return names;
 }
 

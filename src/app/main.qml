@@ -1,4 +1,4 @@
-import QtQuick
+import Example.Chat.Components
 import QtQuick.Controls
 
 ApplicationWindow {
@@ -11,9 +11,6 @@ ApplicationWindow {
 
         anchors.fill: parent
 
-        initialItem: ContactPage {
-        }
-
+        initialItem: ContactPage {}
     }
-
 }

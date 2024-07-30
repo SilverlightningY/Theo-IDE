@@ -1,12 +1,21 @@
+#include <QtQml/qqmlregistration.h>
+
 #include <QSqlTableModel>
 
 class SqlConversationModel : public QSqlTableModel {
   Q_OBJECT
   Q_PROPERTY(QString recipient READ recipient WRITE setRecipient NOTIFY
                  recipientChanged);
+  QML_ELEMENT
 
  public:
   SqlConversationModel(QObject *parent = nullptr);
+  enum SqlConversationModelRoles {
+    AuthorRole = Qt::UserRole,
+    RecipientRole,
+    TimestampRole,
+    MessageRole
+  };
 
   QString recipient() const;
   void setRecipient(const QString &recipient);
