@@ -33,6 +33,7 @@
 
 # Build directories
 build*/
+.cache/
 
 # CMake
 CMakeUserPresets.json
