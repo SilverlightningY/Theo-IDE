@@ -1,4 +1,4 @@
-import Example.Chat.Components
+import TheoIDE.Pages
 import QtQuick.Controls
 
 ApplicationWindow {
@@ -11,6 +11,6 @@ ApplicationWindow {
 
         anchors.fill: parent
 
-        initialItem: ContactPage {}
+        initialItem: EditorPage {}
     }
 }

@@ -36,8 +36,12 @@ static void connectToDatabase() {
 
 int main(int argc, char *argv[]) {
   QGuiApplication app(argc, argv);
+  app.setApplicationName("TheoIDE");
+  app.setApplicationDisplayName("Theo IDE");
+  app.setOrganizationName("Theo IDE Development Team");
+  app.setOrganizationDomain("Theo-IDE.github.io");
 
-  connectToDatabase();
+  // connectToDatabase();
 
   QTranslator translator;
   const QStringList uiLanguages = QLocale::system().uiLanguages();

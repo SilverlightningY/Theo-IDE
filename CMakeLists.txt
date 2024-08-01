@@ -5,7 +5,7 @@ project(TheoIDE VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
-find_package(Qt6 6.6 COMPONENTS Quick Core Sql REQUIRED)
+find_package(Qt6 6.6 COMPONENTS Core Quick QuickControls2 Sql REQUIRED)
 
 qt_standard_project_setup(REQUIRES 6.6)
 qt_policy(SET QTP0003 NEW)

@@ -12,7 +12,7 @@ qt_add_qml_module(TheoIDEApp
     IMPORTS
         QtQuick
         QtQuick.Controls
-        Example.Chat.Components
+        TheoIDE.Pages
 )
 
 set_target_properties(
@@ -27,11 +27,11 @@ set_target_properties(
         CXX_STANDARD 20
 )
 
-add_subdirectory(Example/Chat/Components)
+add_subdirectory(TheoIDE/Pages)
 
 target_link_libraries(
     TheoIDEApp
-    PRIVATE TheoVM TheoC ExampleChatComponents Qt6::Quick Qt6::Core Qt6::Sql
+    PRIVATE TheoVM TheoC TheoIDEPages Qt6::Quick Qt6::Core Qt6::Sql
 )
 
 install(
