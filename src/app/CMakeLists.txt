@@ -32,6 +32,7 @@ set_target_properties(
 )
 
 add_subdirectory(TheoIDE/Persistence)
+add_subdirectory(TheoIDE/Controls)
 add_subdirectory(TheoIDE/Pages)
 
 target_link_libraries(
