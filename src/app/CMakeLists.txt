@@ -1,4 +1,7 @@
-qt_add_executable(TheoIDEApp main.cpp)
+set(APP_SOURCES main.cpp)
+qt_add_resources(APP_SOURCES icons/icons.qrc)
+
+qt_add_executable(TheoIDEApp ${APP_SOURCES})
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
     target_compile_definitions(TheoIDEApp PRIVATE QT_QML_DEBUG)
