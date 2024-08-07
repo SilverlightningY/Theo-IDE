@@ -5,6 +5,7 @@ qt_add_qml_module(
     VERSION 1.0
     QML_FILES
         CodeEditor.qml
+        ExecutionStatePanel.qml
     URI TheoIDE.Controls
     IMPORTS
         QtQuick
