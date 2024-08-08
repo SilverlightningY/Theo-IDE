@@ -7,6 +7,9 @@ import Qt.labs.qmlmodels
 Item {
     id: root
 
+    property bool autoStepEnabled: false
+    property alias implicitWidth: toolBar.implicitWidth
+
     Action {
         id: stepNextAction
         text: qsTr("Step Next Breakpoint")
@@ -29,6 +32,20 @@ Item {
         id: stopAction
         text: qsTr("Stop")
         icon.name: "stop"
+    }
+
+    Action {
+        id: enableAutoStepAction
+        text: qsTr("Enable Auto Step")
+        icon.name: "autoplay"
+        onTriggered: root.autoStepEnabled = true
+    }
+
+    Action {
+        id: disableAutoStepAction
+        text: qsTr("Disable Auto Step")
+        icon.name: "autopause"
+        onTriggered: root.autoStepEnabled = false
     }
 
     Rectangle {
@@ -63,6 +80,10 @@ Item {
                 }
                 ToolButton {
                     action: stepAction
+                    display: AbstractButton.IconOnly
+                }
+                ToolButton {
+                    action: root.autoStepEnabled ? disableAutoStepAction : enableAutoStepAction
                     display: AbstractButton.IconOnly
                 }
                 ToolButton {

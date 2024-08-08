@@ -2,6 +2,8 @@
   <qresource prefix="/icons">
     <file>theoide-material/index.theme</file>
     <file>theoide-material/symbolic/actions/add.svg</file>
+    <file>theoide-material/symbolic/actions/autopause.svg</file>
+    <file>theoide-material/symbolic/actions/autoplay.svg</file>
     <file>theoide-material/symbolic/actions/bug_report.svg</file>
     <file>theoide-material/symbolic/actions/dock_to_bottom.svg</file>
     <file>theoide-material/symbolic/actions/dock_to_left.svg</file>

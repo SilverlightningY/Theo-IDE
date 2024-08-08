@@ -171,7 +171,7 @@ Page {
 
         ExecutionStatePanel {
             id: codeExecutionStatePanel
-            SplitView.preferredWidth: 200
+            SplitView.preferredWidth: implicitWidth
             SplitView.preferredHeight: 200
         }
     }

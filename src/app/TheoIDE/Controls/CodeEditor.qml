@@ -52,7 +52,10 @@ Item {
             TextEdit {
                 anchors.fill: parent
                 wrapMode: TextEdit.NoWrap
-                font.family: "monospace"
+                font {
+                    family: ThemeSettings.editorFontFamily
+                    pointSize: ThemeSettings.editorFontSize
+                }
                 text: "Content File 2"
             }
         }
