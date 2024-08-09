@@ -1,4 +1,7 @@
-qt_add_executable(TheoIDEApp main.cpp)
+set(APP_SOURCES main.cpp)
+qt_add_resources(APP_SOURCES icons/icons.qrc)
+
+qt_add_executable(TheoIDEApp ${APP_SOURCES})
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
     target_compile_definitions(TheoIDEApp PRIVATE QT_QML_DEBUG)
@@ -11,8 +14,9 @@ qt_add_qml_module(TheoIDEApp
         main.qml
     IMPORTS
         QtQuick
-        QtQuick.Controls
+        QtQuick.Controls.Material
         TheoIDE.Pages
+        TheoIDE.Persistence
 )
 
 set_target_properties(
@@ -27,11 +31,13 @@ set_target_properties(
         CXX_STANDARD 20
 )
 
+add_subdirectory(TheoIDE/Persistence)
+add_subdirectory(TheoIDE/Controls)
 add_subdirectory(TheoIDE/Pages)
 
 target_link_libraries(
     TheoIDEApp
-    PRIVATE TheoVM TheoC TheoIDEPages Qt6::Quick Qt6::Core Qt6::Sql
+    PRIVATE TheoVM TheoC TheoIDEPages TheoIDEPersistence Qt6::Quick Qt6::Core Qt6::Sql Qt6::Svg
 )
 
 install(

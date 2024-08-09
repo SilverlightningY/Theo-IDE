@@ -1,4 +1,5 @@
 #include <QGuiApplication>
+#include <QIcon>
 #include <QLocale>
 #include <QQmlApplicationEngine>
 #include <QSqlDatabase>
@@ -40,6 +41,10 @@ int main(int argc, char *argv[]) {
   app.setApplicationDisplayName("Theo IDE");
   app.setOrganizationName("Theo IDE Development Team");
   app.setOrganizationDomain("Theo-IDE.github.io");
+
+  QIcon::setThemeSearchPaths({":/icons"});
+  QIcon::setThemeName("theoide-material");
+  QIcon::setFallbackThemeName("default");
 
   // connectToDatabase();
 
