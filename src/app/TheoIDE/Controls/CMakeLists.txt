@@ -7,6 +7,8 @@ qt_add_qml_module(
         ClosableTabButton.qml
         CodeEditor.qml
         ExecutionStatePanel.qml
+        LineInfoCell.qml
+        TabContent.qml
     URI TheoIDE.Controls
     IMPORTS
         QtQuick

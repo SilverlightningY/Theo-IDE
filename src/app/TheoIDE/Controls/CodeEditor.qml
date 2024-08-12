@@ -42,17 +42,9 @@ Item {
 
         currentIndex: openFilesTabBar.currentIndex
 
-        Flickable {
-            TextEdit {
-                anchors.fill: parent
-                wrapMode: TextEdit.NoWrap
-                font {
-                    family: ThemeSettings.editorFontFamily
-                    pointSize: ThemeSettings.editorFontSize
-                }
-                text: "Content File 1"
-            }
+        TabContent {
         }
+
         Flickable {
             TextEdit {
                 anchors.fill: parent
