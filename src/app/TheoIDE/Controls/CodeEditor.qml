@@ -6,34 +6,39 @@ import TheoIDE.Persistence
 Item {
     id: root
 
-    Rectangle {
-        id: tabBarFrame
-        color: "transparent"
-        border {
-            width: 1
-            color: ThemeSettings.primary
+    TabBar {
+        id: openFilesTabBar
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+
+        ClosableTabButton {
+            text: "File_1.theo"
+            width: Math.min(implicitWidth, root.width / 2)
+            onCloseTriggered: console.log("Close file 1")
         }
-        height: openFilesTabBar.implicitHeight + border.width
-        width: parent.width
-        TabBar {
-            id: openFilesTabBar
-            width: parent.width
-            TabButton {
-                text: "File_1.theo"
-                width: Math.min(implicitWidth, root.width / 2)
-            }
-            TabButton {
-                text: "File_2_with_very_long_name.theo"
-                width: Math.min(implicitWidth, root.width / 2)
-            }
+        ClosableTabButton {
+            text: "File_2_with_very_long_name.theo"
+            width: Math.min(implicitWidth, root.width / 2)
+            onCloseTriggered: console.log("Close file 2")
         }
     }
 
+    Rectangle {
+        id: tabBarEditorSeparator
+        anchors.top: openFilesTabBar.bottom
+        anchors.right: parent.right
+        anchors.left: parent.left
+        height: 1
+        color: ThemeSettings.primary
+    }
+
     StackLayout {
+        id: tabContentStack
+        anchors.top: tabBarEditorSeparator.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.top: tabBarFrame.bottom
 
         currentIndex: openFilesTabBar.currentIndex
 
