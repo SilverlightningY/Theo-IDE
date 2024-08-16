@@ -4,6 +4,7 @@ qt_add_qml_module(
     TheoIDEControls
     VERSION 1.0
     QML_FILES
+        ClosableTabButton.qml
         CodeEditor.qml
         ExecutionStatePanel.qml
     URI TheoIDE.Controls

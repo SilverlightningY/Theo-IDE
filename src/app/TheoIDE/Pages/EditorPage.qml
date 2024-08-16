@@ -63,6 +63,8 @@ Page {
         }
 
         RowLayout {
+            anchors.fill: parent
+
             readonly property int toolTipDelay: 1000
 
             ToolButton {
@@ -132,8 +134,6 @@ Page {
                 display: AbstractButton.IconOnly
                 visible: headerToolBar.showMoreActionMenu
             }
-
-            anchors.fill: parent
         }
     }
 

@@ -48,59 +48,56 @@ Item {
         onTriggered: root.autoStepEnabled = false
     }
 
-    Rectangle {
-        id: toolBarBorder
-        color: "transparent"
-        border {
-            width: 1
-            color: ThemeSettings.primary
+    ToolBar {
+        id: toolBar
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        leftPadding: 8
+        rightPadding: 8
+        background: Rectangle {
+            height: 48
+            color: ThemeSettings.background
         }
-        width: parent.width
-        height: toolBar.height + border.width
 
-        Pane {
-            id: toolBar
-            spacing: 8
-            implicitHeight: 48
-            topPadding: 0
-            bottomPadding: 0
-            leftPadding: 8
-            rightPadding: 8
-            RowLayout {
-                anchors.fill: parent
+        RowLayout {
+            spacing: 0
 
-                Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-                Layout.leftMargin: 16
-                Layout.rightMargin: 16
-                spacing: 0
-
-                ToolButton {
-                    action: stepNextAction
-                    display: AbstractButton.IconOnly
-                }
-                ToolButton {
-                    action: stepAction
-                    display: AbstractButton.IconOnly
-                }
-                ToolButton {
-                    action: root.autoStepEnabled ? disableAutoStepAction : enableAutoStepAction
-                    display: AbstractButton.IconOnly
-                }
-                ToolButton {
-                    action: restartAction
-                    display: AbstractButton.IconOnly
-                }
-                ToolButton {
-                    action: stopAction
-                    display: AbstractButton.IconOnly
-                }
+            ToolButton {
+                action: stepNextAction
+                display: AbstractButton.IconOnly
+            }
+            ToolButton {
+                action: stepAction
+                display: AbstractButton.IconOnly
+            }
+            ToolButton {
+                action: root.autoStepEnabled ? disableAutoStepAction : enableAutoStepAction
+                display: AbstractButton.IconOnly
+            }
+            ToolButton {
+                action: restartAction
+                display: AbstractButton.IconOnly
+            }
+            ToolButton {
+                action: stopAction
+                display: AbstractButton.IconOnly
             }
         }
     }
 
+    Rectangle {
+        id: toolBarSeparator
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: toolBar.bottom
+        color: ThemeSettings.primary
+        height: 1
+    }
+
     Control {
         id: variableStateTableContainer
-        anchors.top: toolBarBorder.bottom
+        anchors.top: toolBarSeparator.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
