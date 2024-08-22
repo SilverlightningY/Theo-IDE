@@ -1,27 +1,100 @@
-import QtQuick.Controls
+import QtQuick.Controls.Material
 import QtQuick
 import TheoIDE.Persistence
 
 Control {
     id: root
     required property int lineNumber
-    required property bool breakPointSet
+    required property bool breakPointActive
+    required property real lineHeight
+    required property var model
 
+    property color breakPointActiveBackgroundColor: ThemeSettings.accent
+    property color breakPointActiveHoverBackgroundColor: Qt.lighter(ThemeSettings.accent, 1.1)
+    property color defaultBackgroundColor: "transparent"
+    property color hoverBackgroundColor: Material.theme === Material.Dark ? "#19ffffff" : "#19000000"
+    hoverEnabled: false
     implicitWidth: Math.max(leftInset + implicitBackgroundWidth + rightInset, leftPadding + implicitContentWidth + rightPadding)
     implicitHeight: Math.max(topInset + implicitBackgroundHeight + bottomInset, topPadding + implicitContentHeight + bottomPadding)
+    height: lineHeight
+
+    function toggleBreakpoint() {
+        model.breakPointActive = !breakPointActive;
+    }
 
     background: Rectangle {
-        color: root.breakPointSet ? ThemeSettings.accent : "transparent"
+        id: numberHighlight
+        color: root.defaultBackgroundColor
         radius: height / 2
+        MouseArea {
+            id: mouseArea
+            anchors.fill: parent
+            onClicked: root.toggleBreakpoint()
+            hoverEnabled: true
+            property bool hovered: false
+            onEntered: hovered = true
+            onExited: hovered = false
+        }
+        height: numberText.implicitHeight
     }
+
     contentItem: Text {
+        id: numberText
         text: root.lineNumber
-        leftPadding: height / 2
+        leftPadding: implicitHeight / 2
         rightPadding: leftPadding
-        color: root.breakPointSet ? ThemeSettings.background : ThemeSettings.foreground
+        color: Qt.tint(ThemeSettings.foreground, Qt.alpha(ThemeSettings.background, 0.4))
         font {
             pointSize: ThemeSettings.editorFontSize
             family: ThemeSettings.editorFontFamily
         }
     }
+
+    states: [
+        State {
+            name: "breakPointActiveAndHovered"
+            extend: "breakPointActive"
+            when: root.breakPointActive && mouseArea.hovered
+            changes: [
+                PropertyChanges {
+                    numberHighlight.color: root.breakPointActiveHoverBackgroundColor
+                }
+            ]
+        },
+        State {
+            name: "breakPointActive"
+            when: root.breakPointActive
+            changes: [
+                PropertyChanges {
+                    numberHighlight.color: root.breakPointActiveBackgroundColor
+                },
+                PropertyChanges {
+                    numberText.color: ThemeSettings.background
+                }
+            ]
+        },
+        State {
+            name: "hovered"
+            when: mouseArea.hovered
+            changes: PropertyChanges {
+                numberHighlight.color: root.hoverBackgroundColor
+            }
+        }
+    ]
+    transitions: [
+        Transition {
+            ParallelAnimation {
+                ColorAnimation {
+                    duration: 100
+                    target: numberHighlight
+                    property: "color"
+                }
+                ColorAnimation {
+                    duration: 100
+                    target: numberText
+                    property: "color"
+                }
+            }
+        }
+    ]
 }

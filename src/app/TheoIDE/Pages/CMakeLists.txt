@@ -15,5 +15,10 @@ qt_add_qml_module(
 
 target_link_libraries(
     TheoIDEPages
-    PRIVATE Qt::Core Qt::Quick Qt::QuickControls2 TheoIDEPersistence TheoIDEControls
+    PRIVATE
+        Qt::Core
+        Qt::Quick
+        Qt::QuickControls2
+        TheoIDEPersistence
+        TheoIDEControls
 )

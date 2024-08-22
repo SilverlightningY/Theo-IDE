@@ -42,8 +42,7 @@ Item {
 
         currentIndex: openFilesTabBar.currentIndex
 
-        TabContent {
-        }
+        TabContent {}
 
         Flickable {
             TextEdit {

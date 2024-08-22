@@ -113,13 +113,16 @@ Item {
             columnSpacing: 1
             rowSpacing: 1
             clip: true
+            boundsBehavior: Flickable.StopAtBounds
 
             model: TableModel {
                 TableModelColumn {
                     display: "variable"
+                    decoration: qsTr("Variable")
                 }
                 TableModelColumn {
                     display: "value"
+                    decoration: qsTr("Value")
                 }
                 rows: [
                     {

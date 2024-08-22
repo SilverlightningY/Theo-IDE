@@ -3,10 +3,17 @@ cmake_minimum_required(VERSION 3.25)
 project(TheoIDE VERSION 0.1.0 LANGUAGES CXX)
 
 set(QT_VERSION 6.7)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
-find_package(Qt6 ${QT_VERSION} COMPONENTS Core Quick QuickControls2 Sql Svg REQUIRED)
+find_package(
+    Qt6
+    ${QT_VERSION}
+    COMPONENTS Core Quick QuickControls2 Sql Svg
+    REQUIRED
+)
 
 qt_standard_project_setup(REQUIRES ${QT_VERSION})
 

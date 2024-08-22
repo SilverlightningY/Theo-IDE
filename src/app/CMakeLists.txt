@@ -37,7 +37,15 @@ add_subdirectory(TheoIDE/Pages)
 
 target_link_libraries(
     TheoIDEApp
-    PRIVATE TheoVM TheoC TheoIDEPages TheoIDEPersistence Qt6::Quick Qt6::Core Qt6::Sql Qt6::Svg
+    PRIVATE
+        TheoVM
+        TheoC
+        TheoIDEPages
+        TheoIDEPersistence
+        Qt6::Quick
+        Qt6::Core
+        Qt6::Sql
+        Qt6::Svg
 )
 
 install(
