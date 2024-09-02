@@ -9,6 +9,7 @@ ScrollView {
     property int innerMargin: 0
     property alias cursorPosition: textEdit.cursorPosition
     property alias contentY: flickable.contentY
+    property alias text: textEdit.text
 
     Flickable {
         id: flickable
@@ -29,7 +30,6 @@ ScrollView {
                 family: ThemeSettings.editorFontFamily
                 pointSize: ThemeSettings.editorFontSize
             }
-            text: "Content File 1\nwith multiple lines of code."
             onCursorRectangleChanged: flickable.scrollIntoView(cursorRectangle)
         }
 
@@ -52,11 +52,11 @@ ScrollView {
 
         Binding on contentWidth {
             value: textEdit.implicitWidth
-            when: width < textEdit.implicitWidth
+            when: flickable.width < textEdit.implicitWidth
         }
         Binding on contentHeight {
             value: textEdit.implicitHeight
-            when: height < textEdit.implicitHeight
+            when: flickable.height < textEdit.implicitHeight
         }
     }
 }

@@ -1,26 +1,35 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls.Material
 import QtQuick.Layouts
 import TheoIDE.Persistence
+import TheoIDE.Controls
 
 Item {
     id: root
+
+    required property EditorModel model
 
     TabBar {
         id: openFilesTabBar
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-
-        ClosableTabButton {
-            text: "File_1.theo"
-            width: Math.min(implicitWidth, root.width / 2)
-            onCloseTriggered: console.log("Close file 1")
+        background: Rectangle {
+            height: 48
+            color: ThemeSettings.background
         }
-        ClosableTabButton {
-            text: "File_2_with_very_long_name.theo"
-            width: Math.min(implicitWidth, root.width / 2)
-            onCloseTriggered: console.log("Close file 2")
+        height: Math.max(background.height, contentItem.height)
+
+        Repeater {
+            model: root.model
+            delegate: ClosableTabButton {
+                required property string displayTabName
+                required property int index
+                onCloseTriggered: root.model.closeTabAt(index)
+                text: displayTabName
+                width: implicitWidth
+            }
         }
     }
 
@@ -42,17 +51,11 @@ Item {
 
         currentIndex: openFilesTabBar.currentIndex
 
-        TabContent {}
-
-        Flickable {
-            TextEdit {
-                anchors.fill: parent
-                wrapMode: TextEdit.NoWrap
-                font {
-                    family: ThemeSettings.editorFontFamily
-                    pointSize: ThemeSettings.editorFontSize
-                }
-                text: "Content File 2"
+        Repeater {
+            model: root.model
+            delegate: TabContent {
+                required property string storedTabText
+                text: storedTabText
             }
         }
     }

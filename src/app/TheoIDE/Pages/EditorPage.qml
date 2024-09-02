@@ -1,11 +1,15 @@
+import QtCore
 import QtQuick
-import QtQuick.Layouts
 import QtQuick.Controls.Material
+import QtQuick.Dialogs
+import QtQuick.Layouts
 import TheoIDE.Controls
 import TheoIDE.Persistence
 
 Page {
     id: root
+
+    required property EditorModel model
 
     header: ToolBar {
         id: headerToolBar
@@ -20,13 +24,15 @@ Page {
             id: openFileAction
             icon.name: "file_open"
             text: qsTr("Open File")
+            onTriggered: fileOpenDialog.open()
         }
 
         Action {
-            id: saveFileAction
+            id: saveAllFilesAction
             icon.name: "save"
-            text: qsTr("Save File")
+            text: qsTr("Save All")
             shortcut: StandardKey.Save
+            onTriggered: root.model.saveAllTabs()
         }
 
         Action {
@@ -34,6 +40,7 @@ Page {
             icon.name: "play_arrow"
             text: qsTr("Run")
             shortcut: "F12"
+            onTriggered: root.model.runScript()
         }
 
         Action {
@@ -41,6 +48,7 @@ Page {
             icon.name: "bug_report"
             text: qsTr("Debug")
             shortcut: "F11"
+            onTriggered: root.model.runScriptInDebugMode()
         }
 
         Action {
@@ -54,6 +62,7 @@ Page {
             id: createFileAction
             icon.name: "add"
             text: qsTr("Create File")
+            onTriggered: root.model.createNewTab()
         }
 
         Action {
@@ -84,7 +93,7 @@ Page {
                 ToolTip.delay: parent.toolTipDelay
             }
             ToolButton {
-                action: saveFileAction
+                action: saveAllFilesAction
                 display: AbstractButton.IconOnly
                 visible: !headerToolBar.showMoreActionMenu
                 ToolTip.visible: hovered
@@ -149,7 +158,7 @@ Page {
             action: openFileAction
         }
         MenuItem {
-            action: saveFileAction
+            action: saveAllFilesAction
         }
         MenuItem {
             action: openSettingsAction
@@ -167,6 +176,7 @@ Page {
             id: codeEditor
             SplitView.fillWidth: true
             SplitView.fillHeight: true
+            model: root.model
         }
 
         ExecutionStatePanel {
@@ -182,5 +192,22 @@ Page {
         width: parent.width
         anchors.bottom: parent.bottom
         color: ThemeSettings.primary
+    }
+
+    FileDialog {
+        id: fileOpenDialog
+        nameFilters: ["Theo IDE Scripts (*.theo)", "Text Files (*.txt)", "All Files (*)"]
+        acceptLabel: qsTr("Open")
+        rejectLabel: qsTr("Cancel")
+        Component.onCompleted: {
+            const documentsLocations = StandardPaths.standardLocations(StandardPaths.DocumentsLocation);
+            currentFolder = documentsLocations.length > 0 ? documentsLocations[0] : undefined;
+        }
+        fileMode: FileDialog.OpenFiles
+        onAccepted: {
+            currentFiles.forEach(fileUrl => {
+                root.model.openFile(fileUrl);
+            });
+        }
     }
 }

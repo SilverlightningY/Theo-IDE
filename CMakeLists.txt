@@ -11,7 +11,7 @@ option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 find_package(
     Qt6
     ${QT_VERSION}
-    COMPONENTS Core Quick QuickControls2 Sql Svg
+    COMPONENTS Core Quick QuickControls2 Sql Svg Concurrent
     REQUIRED
 )
 

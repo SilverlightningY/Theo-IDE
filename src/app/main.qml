@@ -1,6 +1,7 @@
 import TheoIDE.Pages
 import QtQuick.Controls.Material
 import TheoIDE.Persistence
+import TheoIDE.Models
 
 ApplicationWindow {
     width: 1000
@@ -18,6 +19,10 @@ ApplicationWindow {
 
         anchors.fill: parent
 
-        initialItem: EditorPage {}
+        initialItem: EditorPage {
+            model: EditorModel {
+                fileSystemService: FileSystemService {}
+            }
+        }
     }
 }

@@ -16,11 +16,27 @@ qt_add_qml_module(
         QtQuick
         QtQuick.Controls.Material
         TheoIDE.Persistence
-    SOURCES
-        lineinfocolumnmodel.cpp lineinfocolumnmodel.hpp
+        TheoIDE.Models
+)
+
+target_sources(
+    TheoIDEControls
+    PRIVATE lineinfocolumnmodel.cpp editormodel.cpp
+    PUBLIC include/lineinfocolumnmodel.hpp include/editormodel.hpp
+)
+
+target_include_directories(
+    TheoIDEControls
+    PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include/
 )
 
 target_link_libraries(
     TheoIDEControls
-    PRIVATE TheoIDEPersistence Qt::Core Qt::Quick Qt::QuickControls2
+    PUBLIC
+        TheoIDEModels
+        TheoIDEPersistence
+        Qt::Core
+        Qt::Quick
+        Qt::QuickControls2
+        Qt::Concurrent
 )

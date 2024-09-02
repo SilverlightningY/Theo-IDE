@@ -1,10 +1,10 @@
 #ifndef _THEOIDE_CONTROLS_LINEINFOCOLUMNMODEL_
 #define _THEOIDE_CONTROLS_LINEINFOCOLUMNMODEL_
 
-#include <QAbstractListModel>
-#include <QQuickTextDocument>
-#include <QTextBlock>
-#include <QtQmlTypeRegistrar/QtQmlTypeRegistrar>
+#include <qabstractitemmodel.h>
+#include <qqmlintegration.h>
+#include <qquicktextdocument.h>
+#include <qtextobject.h>
 
 class LineInfoUserData : public QTextBlockUserData {
  public:

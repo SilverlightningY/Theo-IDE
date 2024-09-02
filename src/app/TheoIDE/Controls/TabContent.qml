@@ -7,6 +7,8 @@ Item {
     property alias currentIndex: lineInfoColumn.currentIndex
     property alias currentItem: lineInfoColumn.currentItem
     readonly property int innerMargin: 8
+    property alias text: textEdit.text
+    property alias textDocument: textEdit.textDocument
 
     Rectangle {
         id: currentLineHighlight

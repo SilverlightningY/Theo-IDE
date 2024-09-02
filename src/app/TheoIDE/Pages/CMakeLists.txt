@@ -9,6 +9,8 @@ qt_add_qml_module(
     IMPORTS
         QtQuick
         QtQuick.Controls.Material
+        QtQuick.Dialogs
+        QtQuick.Layouts
         TheoIDE.Persistence
         TheoIDE.Controls
 )
