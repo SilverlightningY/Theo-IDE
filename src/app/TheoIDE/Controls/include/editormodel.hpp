@@ -20,6 +20,7 @@
 
 #include <optional>
 
+#include "dialogservice.hpp"
 #include "filesystemservice.hpp"
 
 using FileOptional = std::optional<QSharedPointer<QFile>>;
@@ -81,6 +82,8 @@ class EditorModel : public QAbstractListModel {
                  mainTabIndexChanged)
   Q_PROPERTY(FileSystemService* fileSystemService READ fileSystemService WRITE
                  setFileSystemService NOTIFY fileSystemServiceChanged)
+  Q_PROPERTY(DialogService* dialogService READ dialogService WRITE
+                 setDialogService NOTIFY dialogServiceChanged)
   QML_ELEMENT
  public:
   EditorModel(QObject* parent = nullptr);
@@ -99,6 +102,7 @@ class EditorModel : public QAbstractListModel {
                int role) override;
   int mainTabIndex() const;
   FileSystemService* fileSystemService() const;
+  DialogService* dialogService() const;
 
   Q_INVOKABLE
   void openFile(const QUrl& url);
@@ -119,14 +123,19 @@ class EditorModel : public QAbstractListModel {
   void setMainTabIndex(int index);
   void setFileSystemService(FileSystemService* fileSystemService);
   void createTabFromFile(QSharedPointer<QFile> file, const QString& storedText);
+  void setDialogService(DialogService* dialogService);
+  void displayFileReadFailure(QSharedPointer<QFile> file,
+                              const FileError& error);
 
  signals:
   void mainTabIndexChanged(int index);
   void fileSystemServiceChanged();
+  void dialogServiceChanged();
 
  private:
   int _mainTabIndex = 0;
   QPointer<FileSystemService> _fileSystemService;
+  QPointer<DialogService> _dialogService;
   QList<QSharedPointer<TabModel>> _tabs;
   mutable QMutex _tabsMutex;
   mutable QMutex _temporaryTabIndexesMutex;
@@ -146,6 +155,8 @@ class EditorModel : public QAbstractListModel {
   int appendTemporaryTabIndex(QSharedPointer<TabModel> tab);
   void removeTemporaryTabIndex(QSharedPointer<TabModel> tab);
   void updateAllTabNames();
+  void disconnectFileSystemService();
+  void connectFileSystemService();
 };
 
 #endif

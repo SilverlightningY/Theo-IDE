@@ -1,3 +1,5 @@
+#include "editormodel.hpp"
+
 #include <qabstractitemmodel.h>
 #include <qalgorithms.h>
 #include <qcontainerfwd.h>
@@ -18,7 +20,7 @@
 #include <algorithm>
 #include <optional>
 
-#include "editormodel.hpp"
+#include "dialogservice.hpp"
 #include "filesystemservice.hpp"
 
 EditorModel::EditorModel(QObject* parent) : QAbstractListModel(parent) {}
@@ -92,20 +94,34 @@ bool EditorModel::setData(const QModelIndex& index, const QVariant& data,
 }
 
 FileSystemService* EditorModel::fileSystemService() const {
-  return _fileSystemService.get();
+  return _fileSystemService.data();
+}
+
+DialogService* EditorModel::dialogService() const {
+  return _dialogService.data();
 }
 
 void EditorModel::setFileSystemService(FileSystemService* fileSystemService) {
   if (_fileSystemService != fileSystemService) {
-    if (_fileSystemService) {
-      disconnect(_fileSystemService, nullptr, this, nullptr);
-    }
+    disconnectFileSystemService();
     _fileSystemService = QPointer<FileSystemService>(fileSystemService);
-    if (_fileSystemService) {
-      connect(_fileSystemService, &FileSystemService::fileRead, this,
-              &EditorModel::createTabFromFile);
-    }
     emit fileSystemServiceChanged();
+    connectFileSystemService();
+  }
+}
+
+void EditorModel::disconnectFileSystemService() {
+  if (_fileSystemService) {
+    disconnect(_fileSystemService, nullptr, this, nullptr);
+  }
+}
+
+void EditorModel::connectFileSystemService() {
+  if (_fileSystemService) {
+    connect(_fileSystemService, &FileSystemService::fileRead, this,
+            &EditorModel::createTabFromFile);
+    connect(_fileSystemService, &FileSystemService::fileReadFailed, this,
+            &EditorModel::displayFileReadFailure);
   }
 }
 
@@ -124,6 +140,13 @@ void EditorModel::createTabFromFile(QSharedPointer<QFile> file,
   const QString tabName = createTabNameRelativeToMainTab(file);
   _tabs.append(QSharedPointer<TabModel>(new TabModel(tabName, file, content)));
   endInsertRows();
+}
+
+void EditorModel::setDialogService(DialogService* dialogService) {
+  if (_dialogService != dialogService) {
+    _dialogService = QPointer(dialogService);
+    emit dialogServiceChanged();
+  }
 }
 
 void EditorModel::saveAllTabs() {
@@ -247,5 +270,37 @@ void EditorModel::updateAllTabNames() {
     const QModelIndex modelIndex = createIndex(index, 0);
     emit dataChanged(modelIndex, modelIndex);
     ++index;
+  }
+}
+
+void EditorModel::displayFileReadFailure(QSharedPointer<QFile> file,
+                                         const FileError& error) {
+  if (_dialogService.isNull()) {
+    qFatal() << "An error occured but the dialog service was null:"
+             << error.what();
+    return;
+  }
+
+  const auto fileReadError =
+      QScopedPointer(dynamic_cast<const FileReadError*>(&error));
+
+  if (fileReadError) {
+    _dialogService->addReadPermissionDenied(fileReadError->fileName());
+    return;
+  }
+
+  const auto maxFileSizeExceededError =
+      QScopedPointer(dynamic_cast<const MaxReadFileSizeExceededError*>(&error));
+  if (maxFileSizeExceededError) {
+    _dialogService->addMaxReadFileSizeExceeded(
+        maxFileSizeExceededError->fileName(),
+        maxFileSizeExceededError->maxFileSizeBytes());
+    return;
+  }
+  const auto fileDoesNotExistError =
+      QScopedPointer(dynamic_cast<const FileDoesNotExistError*>(&error));
+  if (fileDoesNotExistError) {
+    _dialogService->addFileDoesNotExist(fileDoesNotExistError->fileName());
+    return;
   }
 }

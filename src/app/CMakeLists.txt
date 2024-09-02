@@ -18,6 +18,7 @@ qt_add_qml_module(TheoIDEApp
         TheoIDE.Pages
         TheoIDE.Persistence
         TheoIDE.Models
+        TheoIDE.Controls
 )
 
 set_target_properties(
@@ -45,6 +46,7 @@ target_link_libraries(
         TheoIDEPages
         TheoIDEPersistence
         TheoIDEModels
+        TheoIDEControls
         Qt6::Quick
         Qt6::Core
         Qt6::Sql
