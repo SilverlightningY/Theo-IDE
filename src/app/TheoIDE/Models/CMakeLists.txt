@@ -4,12 +4,8 @@ qt_add_qml_module(
     TheoIDEModels
     VERSION 1.0
     URI TheoIDE.Models
-)
-
-target_sources(
-    TheoIDEModels
-    PRIVATE filesystemservice.cpp
-    PUBLIC include/filesystemservice.hpp
+    SOURCES
+        filesystemservice.cpp include/filesystemservice.hpp
 )
 
 target_include_directories(
