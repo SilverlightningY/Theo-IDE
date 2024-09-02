@@ -12,6 +12,13 @@ qt_add_qml_module(
     URI TheoIDE.Persistence
     VERSION 1.0
     QML_FILES ${QML_FILE_SINGLETONS}
+    SOURCES
+        systemfontconfiguration.cpp include/systemfontconfiguration.hpp
+)
+
+target_include_directories(
+    TheoIDEPersistence
+    PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include/
 )
 
 target_link_libraries(
