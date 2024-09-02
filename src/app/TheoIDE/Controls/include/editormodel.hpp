@@ -119,7 +119,6 @@ class EditorModel : public QAbstractListModel {
   void setMainTabIndex(int index);
   void setFileSystemService(FileSystemService* fileSystemService);
   void createTabFromFile(QSharedPointer<QFile> file, const QString& storedText);
-  void createEmptyTab();
 
  signals:
   void mainTabIndexChanged(int index);

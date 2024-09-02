@@ -16,10 +16,10 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         background: Rectangle {
-            height: 48
+            implicitHeight: 48
             color: ThemeSettings.background
         }
-        height: Math.max(background.height, contentItem.height)
+        height: Math.max(background.implicitHeight, contentItem.implicitHeight)
 
         Repeater {
             model: root.model
