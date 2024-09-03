@@ -17,6 +17,7 @@ qt_add_qml_module(TheoIDEApp
         QtQuick.Controls.Material
         TheoIDE.Pages
         TheoIDE.Persistence
+        TheoIDE.Models
 )
 
 set_target_properties(
@@ -31,13 +32,23 @@ set_target_properties(
         CXX_STANDARD 20
 )
 
+add_subdirectory(TheoIDE/Models)
 add_subdirectory(TheoIDE/Persistence)
 add_subdirectory(TheoIDE/Controls)
 add_subdirectory(TheoIDE/Pages)
 
 target_link_libraries(
     TheoIDEApp
-    PRIVATE TheoVM TheoC TheoIDEPages TheoIDEPersistence Qt6::Quick Qt6::Core Qt6::Sql Qt6::Svg
+    PRIVATE
+        TheoVM
+        TheoC
+        TheoIDEPages
+        TheoIDEPersistence
+        TheoIDEModels
+        Qt6::Quick
+        Qt6::Core
+        Qt6::Sql
+        Qt6::Svg
 )
 
 install(

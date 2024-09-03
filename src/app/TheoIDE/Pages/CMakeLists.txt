@@ -9,11 +9,18 @@ qt_add_qml_module(
     IMPORTS
         QtQuick
         QtQuick.Controls.Material
+        QtQuick.Dialogs
+        QtQuick.Layouts
         TheoIDE.Persistence
         TheoIDE.Controls
 )
 
 target_link_libraries(
     TheoIDEPages
-    PRIVATE Qt::Core Qt::Quick Qt::QuickControls2 TheoIDEPersistence TheoIDEControls
+    PRIVATE
+        Qt::Core
+        Qt::Quick
+        Qt::QuickControls2
+        TheoIDEPersistence
+        TheoIDEControls
 )
