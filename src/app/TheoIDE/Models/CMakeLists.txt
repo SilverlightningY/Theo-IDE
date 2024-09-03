@@ -16,4 +16,7 @@ target_include_directories(
     PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include/
 )
 
-target_link_libraries(TheoIDEModels PRIVATE Qt::Core Qt::Qml Qt::Quick Qt::Concurrent)
+target_link_libraries(
+    TheoIDEModels
+    PRIVATE Qt::Core Qt::Qml Qt::Quick Qt::Concurrent
+)

@@ -1,11 +1,10 @@
-#include "dialogservice.hpp"
-
 #include <qsharedpointer.h>
 
 #include <functional>
 #include <optional>
 
 #include "dialogbutton.hpp"
+#include "dialogservice.hpp"
 #include "messagedialogdto.hpp"
 
 DialogService::DialogService() : QObject() {}

@@ -1,5 +1,3 @@
-#include "editormodel.hpp"
-
 #include <qabstractitemmodel.h>
 #include <qalgorithms.h>
 #include <qcontainerfwd.h>
@@ -24,6 +22,7 @@
 #include <optional>
 
 #include "dialogservice.hpp"
+#include "editormodel.hpp"
 #include "filesystemservice.hpp"
 
 EditorModel::EditorModel(QObject* parent) : QAbstractListModel(parent) {}
