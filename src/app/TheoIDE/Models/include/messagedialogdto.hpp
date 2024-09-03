@@ -13,12 +13,14 @@ using DialogModelText = std::optional<QString>;
 
 class MessageDialogDTO {
  public:
-  MessageDialogDTO(const QString& text, DialogModelText detailedText,
+  MessageDialogDTO(const QString& title, const QString& text,
+                   DialogModelText detailedText,
                    DialogModelText informativeText);
 
-  QString text() const { return _text; }
-  DialogModelText detailedText() const { return _detailedText; }
-  DialogModelText informativeText() const { return _informativeText; }
+  QString title() const;
+  QString text() const;
+  DialogModelText detailedText() const;
+  DialogModelText informativeText() const;
   void setButtonWithCallback(DialogButton button, DialogModelCallback callback);
   void setButton(DialogButton button);
   bool hasCallbackFor(DialogButton button) const;
@@ -27,6 +29,7 @@ class MessageDialogDTO {
 
  private:
   QString _text;
+  QString _title;
   DialogModelText _detailedText;
   DialogModelText _informativeText;
   QMap<DialogButton, DialogModelCallback> _buttonCallbacks;

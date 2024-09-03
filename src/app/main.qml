@@ -20,7 +20,7 @@ ApplicationWindow {
     property FileSystemService fileSystemService: FileSystemService {}
 
     ApplicationMessageDialog {
-        dialogModel: MessageDialogModel {
+        model: MessageDialogModel {
             dialogService: root.dialogService
         }
     }
@@ -37,6 +37,4 @@ ApplicationWindow {
             }
         }
     }
-
-    Component.onCompleted: console.log(dialogService.toString())
 }

@@ -93,7 +93,9 @@ class EditorModel : public QAbstractListModel {
     TabNameRole,
     DisplayTabNameRole,
     IsModifiedRole,
-    IsTemporaryRole
+    IsTemporaryRole,
+    TextDocumentRole,
+    OpenRole,
   };
   QHash<int, QByteArray> roleNames() const override;
   int rowCount(const QModelIndex& index) const override;
@@ -157,6 +159,8 @@ class EditorModel : public QAbstractListModel {
   void updateAllTabNames();
   void disconnectFileSystemService();
   void connectFileSystemService();
+  bool setTextDocumentVariantAt(int index, const QVariant& data);
+  bool setOpenAt(int index, const QVariant& data);
 };
 
 #endif

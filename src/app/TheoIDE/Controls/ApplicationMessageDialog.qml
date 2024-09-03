@@ -5,17 +5,70 @@ import TheoIDE.Controls
 MessageDialog {
     id: root
 
-    required property MessageDialogModel dialogModel
+    required property MessageDialogModel model
 
-    text: dialogModel.text
-    informativeText: dialogModel.informativeText
-    detailedText: dialogModel.detailedText
-    dialogModel.onOpenChanged: function (value) {
-        if (value) {
-            root.open();
-        }
+    title: model.title
+    text: model.text
+    informativeText: model.informativeText
+    detailedText: model.detailedText
+    buttons: dialogButtonsToMessageDialogFlags(model.dialogButtons)
+
+    onButtonClicked: function (dialogFlag, role) {
+        model.runButtonAction(dialogFlagToDialogButton(dialogFlag));
     }
-    flags: dialogButtonsToMessageDialogFlags(dialogModel.dialogButtons)
+
+    function updateModelOpen(): void {
+        model.open = root.visible;
+    }
+
+    Component.onCompleted: {
+        root.visibleChanged.connect(updateModelOpen);
+        model.hasMessageToShow.connect(root.open);
+    }
+
+    function dialogFlagToDialogButton(flag: int): int {
+        switch (flag) {
+        case MessageDialog.Ok:
+            return DialogButton.Ok;
+        case MessageDialog.Open:
+            return DialogButton.Open;
+        case MessageDialog.Save:
+            return DialogButton.Save;
+        case MessageDialog.Cancel:
+            return DialogButton.Cancel;
+        case MessageDialog.Close:
+            return DialogButton.Cancel;
+        case MessageDialog.Discard:
+            return DialogButton.Discard;
+        case MessageDialog.Apply:
+            return DialogButton.Apply;
+        case MessageDialog.Reset:
+            return DialogButton.Reset;
+        case MessageDialog.RestoreDefaults:
+            return DialogButton.RestoreDefaults;
+        case MessageDialog.Help:
+            return DialogButton.Help;
+        case MessageDialog.SaveAll:
+            return DialogButton.SaveAll;
+        case MessageDialog.Yes:
+            return DialogButton.Yes;
+        case MessageDialog.YesToAll:
+            return DialogButton.YesToAll;
+        case MessageDialog.No:
+            return DialogButton.No;
+        case MessageDialog.NoToAll:
+            return DialogButton.NoToAll;
+        case MessageDialog.Abort:
+            return DialogButton.Abort;
+        case MessageDialog.Retry:
+            return DialogButton.Retry;
+        case MessageDialog.Ignore:
+            return DialogButton.Ignore;
+        case MessageDialog.NoButton:
+            return DialogButton.NoButton;
+        }
+        return DialogButton.NoButton;
+    }
 
     function dialogButtonsToMessageDialogFlags(dialogButtons): int {
         let flags = 0;
@@ -67,16 +120,16 @@ MessageDialog {
             case DialogButton.NoToAll:
                 flags |= MessageDialog.NoToAll;
                 break;
-            case MessageDialog.Abort:
+            case DialogButton.Abort:
                 flags |= MessageDialog.Abort;
                 break;
-            case MessageDialog.Retry:
+            case DialogButton.Retry:
                 flags |= MessageDialog.Retry;
                 break;
-            case MessageDialog.Ignore:
+            case DialogButton.Ignore:
                 flags |= MessageDialog.Ignore;
                 break;
-            case MessageDialog.NoButton:
+            case DialogButton.NoButton:
                 flags |= MessageDialog.NoButton;
                 break;
             }

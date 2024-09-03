@@ -1,13 +1,8 @@
 #ifndef _THEOIDE_CONTROLS_MESSAGEDIALOGMODEL_
 #define _THEOIDE_CONTROLS_MESSAGEDIALOGMODEL_
 
-#include <qcontainerfwd.h>
 #include <qjsvalue.h>
-#include <qlist.h>
-#include <qobject.h>
 #include <qpointer.h>
-#include <qqmlintegration.h>
-#include <qsharedpointer.h>
 #include <qtmetamacros.h>
 
 #include "dialogbutton.hpp"
@@ -18,21 +13,21 @@ class MessageDialogModel : public QObject {
   Q_OBJECT
   Q_PROPERTY(DialogService* dialogService READ dialogService WRITE
                  setDialogService NOTIFY dialogServiceChanged)
-  Q_PROPERTY(QJSValue text READ text NOTIFY textChanged)
-  Q_PROPERTY(QJSValue detailedText READ detailedText NOTIFY detailedTextChanged)
-  Q_PROPERTY(QJSValue informativeText READ informativeText NOTIFY
+  Q_PROPERTY(QString title READ title NOTIFY titleChanged)
+  Q_PROPERTY(QString text READ text NOTIFY textChanged)
+  Q_PROPERTY(QString detailedText READ detailedText NOTIFY detailedTextChanged)
+  Q_PROPERTY(QString informativeText READ informativeText NOTIFY
                  informativeTextChanged)
-  Q_PROPERTY(bool open READ open NOTIFY openChanged)
+  Q_PROPERTY(bool open READ open WRITE setOpen NOTIFY openChanged)
   Q_PROPERTY(
       QVariantList dialogButtons READ dialogButtons NOTIFY dialogButtonsChanged)
-  QML_ELEMENT
- public:
-  MessageDialogModel(QObject* parent = nullptr);
+  QML_ELEMENT public : MessageDialogModel(QObject* parent = nullptr);
   ~MessageDialogModel();
   DialogService* dialogService() const;
-  QJSValue text() const;
-  QJSValue detailedText() const;
-  QJSValue informativeText() const;
+  QString title() const;
+  QString text() const;
+  QString detailedText() const;
+  QString informativeText() const;
   bool open() const;
   QVariantList dialogButtons() const;
   Q_INVOKABLE
@@ -45,12 +40,14 @@ class MessageDialogModel : public QObject {
   void showMessage();
 
  signals:
+  void titleChanged();
   void dialogServiceChanged();
   void textChanged();
   void detailedTextChanged();
   void informativeTextChanged();
   void openChanged(bool open);
   void dialogButtonsChanged();
+  void hasMessageToShow();
 
  private:
   QPointer<DialogService> _dialogService;

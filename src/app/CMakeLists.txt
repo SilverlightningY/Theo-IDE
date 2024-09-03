@@ -51,6 +51,7 @@ target_link_libraries(
         Qt6::Core
         Qt6::Sql
         Qt6::Svg
+        Qt6::Qml
 )
 
 install(

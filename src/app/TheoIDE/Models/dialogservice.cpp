@@ -26,16 +26,17 @@ std::optional<QSharedPointer<MessageDialogDTO>> DialogService::remove() {
 }
 
 void DialogService::addReadPermissionDenied(const QString& fileName) {
-  auto dto = QSharedPointer<MessageDialogDTO>(new MessageDialogDTO(
-      tr("File can not be read"), tr("Read permission denied."), std::nullopt));
+  auto dto = QSharedPointer<MessageDialogDTO>(
+      new MessageDialogDTO(tr("Permission denied"), tr("File can not be read"),
+                           tr("Read permission denied."), std::nullopt));
   dto->setButton(DialogButton::Ok);
   add(dto);
 }
 
 void DialogService::addFileDoesNotExist(const QString& fileName) {
-  auto dto = QSharedPointer<MessageDialogDTO>(
-      new MessageDialogDTO(tr("The file %1 does not exist").arg(fileName),
-                           std::nullopt, std::nullopt));
+  auto dto = QSharedPointer<MessageDialogDTO>(new MessageDialogDTO(
+      tr("File missing"), tr("The file %1 does not exist").arg(fileName),
+      std::nullopt, std::nullopt));
   dto->setButton(DialogButton::Ok);
   add(dto);
 }
@@ -45,8 +46,8 @@ void DialogService::addUnsavedChangesInFile(
     std::function<void(void)> onDiscard) {
   const QString text = tr("The document %1 has been modified").arg(fileName);
   const QString informativeText = tr("Do you want to save your changes?");
-  auto dto = QSharedPointer<MessageDialogDTO>(
-      new MessageDialogDTO(text, std::nullopt, informativeText));
+  auto dto = QSharedPointer<MessageDialogDTO>(new MessageDialogDTO(
+      tr("Unsaved changes"), text, std::nullopt, informativeText));
   dto->setButtonWithCallback(DialogButton::Save, onSave);
   dto->setButtonWithCallback(DialogButton::Discard, onDiscard);
   add(dto);
@@ -59,8 +60,10 @@ void DialogService::addMaxReadFileSizeExceeded(const QString& fileName,
                            .arg(fileName);
   const QString detailedText =
       tr("The maximum read size is set to %1 bytes").arg(maxFileSizeBytes);
-  auto dto = QSharedPointer<MessageDialogDTO>(
-      new MessageDialogDTO(text, detailedText, std::nullopt));
+  auto dto = QSharedPointer<MessageDialogDTO>(new MessageDialogDTO(
+      tr("Reading aborted"), text, detailedText, std::nullopt));
   dto->setButton(DialogButton::Ok);
   add(dto);
 }
+
+bool DialogService::isEmpty() const { return _dialogDTOs.empty(); }

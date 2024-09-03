@@ -1,15 +1,10 @@
 #include "messagedialogmodel.hpp"
 
-#include <qcontainerfwd.h>
-#include <qdebug.h>
 #include <qjsvalue.h>
 #include <qlogging.h>
-#include <qpointer.h>
 #include <qvariant.h>
 
 #include <algorithm>
-
-#include "dialogbutton.hpp"
 
 MessageDialogModel::MessageDialogModel(QObject* parent) : QObject(parent) {}
 MessageDialogModel::~MessageDialogModel() {}
@@ -18,31 +13,38 @@ DialogService* MessageDialogModel::dialogService() const {
   return _dialogService.data();
 }
 
-QJSValue MessageDialogModel::text() const {
+QString MessageDialogModel::text() const {
   if (_messageDialogDTO) {
     return _messageDialogDTO->text();
   }
-  return QJSValue::UndefinedValue;
+  return QString();
 }
 
-QJSValue MessageDialogModel::detailedText() const {
+QString MessageDialogModel::detailedText() const {
   if (_messageDialogDTO && _messageDialogDTO->detailedText().has_value()) {
     return _messageDialogDTO->detailedText().value();
   }
-  return QJSValue::UndefinedValue;
+  return QString();
 }
 
-QJSValue MessageDialogModel::informativeText() const {
+QString MessageDialogModel::informativeText() const {
   if (_messageDialogDTO && _messageDialogDTO->informativeText().has_value()) {
-    return _messageDialogDTO->detailedText().value();
+    return _messageDialogDTO->informativeText().value();
   }
-  return QJSValue::UndefinedValue;
+  return QString();
+}
+
+QString MessageDialogModel::title() const {
+  if (_messageDialogDTO) {
+    return _messageDialogDTO->title();
+  }
+  return QString();
 }
 
 bool MessageDialogModel::open() const { return _open; }
 
 QVariantList MessageDialogModel::dialogButtons() const {
-  if (_dialogService.isNull()) {
+  if (_messageDialogDTO.isNull()) {
     return {QVariant::fromValue(DialogButton::NoButton)};
   }
   const QList<DialogButton> activeDialogButtons =
@@ -84,11 +86,12 @@ void MessageDialogModel::setMessageDialogDTO(
     QSharedPointer<MessageDialogDTO> dto) {
   if (_messageDialogDTO != dto) {
     _messageDialogDTO = dto;
+    emit titleChanged();
     emit textChanged();
     emit detailedTextChanged();
     emit informativeTextChanged();
     emit dialogButtonsChanged();
-    setOpen(true);
+    emit hasMessageToShow();
   }
 }
 
@@ -103,14 +106,20 @@ void MessageDialogModel::showMessage() {
   if (_open) {
     return;
   }
-  if (_dialogService.isNull() || _dialogService->isEmpty()) {
+  if (_dialogService.isNull()) {
+    qFatal() << "Trying to fetch next message from dialog service, but the "
+                "dialog service is null";
     return;
   }
-  auto message = _dialogService->remove();
-  if (!message.has_value()) {
+  if (_dialogService->isEmpty()) {
     return;
   }
-  setMessageDialogDTO(message.value());
+  auto messageOptional = _dialogService->remove();
+  if (!messageOptional.has_value()) {
+    qFatal() << "Received a nullopt message from dialog service";
+    return;
+  }
+  setMessageDialogDTO(messageOptional.value());
 }
 
 void MessageDialogModel::disconnectDialogService() {
