@@ -43,7 +43,7 @@ ScrollView {
             }
 
             function insertNewline(event: KeyEvent): void {
-                textEdit.insert(textEdit.cursorPosition, "newline\n");
+                textEdit.insert(textEdit.cursorPosition, "\n");
                 event.accepted = true;
             }
         }
