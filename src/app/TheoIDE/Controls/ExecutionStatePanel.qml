@@ -57,7 +57,7 @@ Item {
         rightPadding: 8
         background: Rectangle {
             height: 48
-            color: ThemeSettings.background
+            color: ApplicationSettings.background
         }
 
         RowLayout {
@@ -66,22 +66,27 @@ Item {
             ToolButton {
                 action: stepNextAction
                 display: AbstractButton.IconOnly
+                icon.color: ApplicationSettings.foreground
             }
             ToolButton {
                 action: stepAction
                 display: AbstractButton.IconOnly
+                icon.color: ApplicationSettings.foreground
             }
             ToolButton {
                 action: root.autoStepEnabled ? disableAutoStepAction : enableAutoStepAction
                 display: AbstractButton.IconOnly
+                icon.color: ApplicationSettings.foreground
             }
             ToolButton {
                 action: restartAction
                 display: AbstractButton.IconOnly
+                icon.color: ApplicationSettings.foreground
             }
             ToolButton {
                 action: stopAction
                 display: AbstractButton.IconOnly
+                icon.color: ApplicationSettings.foreground
             }
         }
     }
@@ -91,7 +96,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: toolBar.bottom
-        color: ThemeSettings.primary
+        color: ApplicationSettings.primary
         height: 1
     }
 
@@ -104,7 +109,7 @@ Item {
         padding: 10
 
         background: Rectangle {
-            color: ThemeSettings.primary
+            color: ApplicationSettings.primary
         }
 
         contentItem: TableView {
@@ -153,7 +158,7 @@ Item {
             delegate: Rectangle {
                 required property string display
 
-                color: ThemeSettings.background
+                color: ApplicationSettings.background
                 implicitHeight: tableCellText.implicitHeight
                 implicitWidth: tableCellText.implicitWidth
 
@@ -161,16 +166,17 @@ Item {
                     id: tableCellText
                     text: parent.display
                     anchors.fill: parent
-                    rightPadding: ThemeSettings.editorFontSize
+                    rightPadding: ApplicationSettings.editorFontSize
                     leftPadding: rightPadding
-                    topPadding: ThemeSettings.editorFontSize / 2
+                    topPadding: ApplicationSettings.editorFontSize / 2
                     bottomPadding: topPadding
                     horizontalAlignment: Text.AlignRight
                     verticalAlignment: Text.AlignBottom
                     font {
-                        family: ThemeSettings.editorFontFamily
-                        pointSize: ThemeSettings.editorFontSize
+                        family: ApplicationSettings.editorFontFamily
+                        pointSize: ApplicationSettings.editorFontSize
                     }
+                    color: ApplicationSettings.foreground
                 }
             }
         }

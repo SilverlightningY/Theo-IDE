@@ -9,8 +9,8 @@ Control {
     required property real lineHeight
     required property var model
 
-    property color breakPointActiveBackgroundColor: ThemeSettings.accent
-    property color breakPointActiveHoverBackgroundColor: Qt.lighter(ThemeSettings.accent, 1.1)
+    property color breakPointActiveBackgroundColor: ApplicationSettings.accent
+    property color breakPointActiveHoverBackgroundColor: Qt.lighter(ApplicationSettings.accent, 1.1)
     property color defaultBackgroundColor: "transparent"
     property color hoverBackgroundColor: Material.theme === Material.Dark ? "#19ffffff" : "#19000000"
     hoverEnabled: false
@@ -43,10 +43,10 @@ Control {
         text: root.lineNumber
         leftPadding: implicitHeight / 2
         rightPadding: leftPadding
-        color: Qt.tint(ThemeSettings.foreground, Qt.alpha(ThemeSettings.background, 0.4))
+        color: Qt.tint(ApplicationSettings.foreground, Qt.alpha(ApplicationSettings.background, 0.4))
         font {
-            pointSize: ThemeSettings.editorFontSize
-            family: ThemeSettings.editorFontFamily
+            pointSize: ApplicationSettings.editorFontSize
+            family: ApplicationSettings.editorFontFamily
         }
     }
 
@@ -69,7 +69,7 @@ Control {
                     numberHighlight.color: root.breakPointActiveBackgroundColor
                 },
                 PropertyChanges {
-                    numberText.color: ThemeSettings.background
+                    numberText.color: ApplicationSettings.background
                 }
             ]
         },

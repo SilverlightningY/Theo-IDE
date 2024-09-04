@@ -26,11 +26,26 @@ ScrollView {
             id: textEdit
             anchors.fill: parent
             wrapMode: TextEdit.NoWrap
+            color: ApplicationSettings.foreground
             font {
-                family: ThemeSettings.editorFontFamily
-                pointSize: ThemeSettings.editorFontSize
+                family: ApplicationSettings.editorFontFamily
+                pointSize: ApplicationSettings.editorFontSize
             }
             onCursorRectangleChanged: flickable.scrollIntoView(cursorRectangle)
+
+            // Workaround to prevent the keyboard from closing on Android
+            Keys.priority: Keys.BeforeItem
+            Keys.onEnterPressed: function(event) {
+                insertNewline(event);
+            }
+            Keys.onReturnPressed: function(event) {
+                insertNewline(event);
+            }
+
+            function insertNewline(event: KeyEvent): void {
+                textEdit.insert(textEdit.cursorPosition, "newline\n");
+                event.accepted = true;
+            }
         }
 
         function scrollIntoView(r: rect): void {

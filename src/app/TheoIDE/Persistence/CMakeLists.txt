@@ -1,6 +1,6 @@
 qt_add_library(TheoIDEPersistence)
 
-set(QML_FILE_SINGLETONS ThemeSettings.qml)
+set(QML_FILE_SINGLETONS ApplicationSettings.qml)
 
 set_source_files_properties(
     ${QML_FILE_SINGLETONS}
