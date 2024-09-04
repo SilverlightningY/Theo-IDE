@@ -35,16 +35,17 @@ ScrollView {
 
             // Workaround to prevent the keyboard from closing on Android
             Keys.priority: Keys.BeforeItem
-            Keys.onEnterPressed: function(event) {
+            Keys.onEnterPressed: function (event) {
                 insertNewline(event);
             }
-            Keys.onReturnPressed: function(event) {
+            Keys.onReturnPressed: function (event) {
                 insertNewline(event);
             }
 
             function insertNewline(event: KeyEvent): void {
                 textEdit.insert(textEdit.cursorPosition, "\n");
                 event.accepted = true;
+                textEdit.focus = true;
             }
         }
 
