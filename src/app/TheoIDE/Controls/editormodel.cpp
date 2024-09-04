@@ -1,3 +1,5 @@
+#include "editormodel.hpp"
+
 #include <qabstractitemmodel.h>
 #include <qalgorithms.h>
 #include <qcontainerfwd.h>
@@ -22,7 +24,6 @@
 #include <optional>
 
 #include "dialogservice.hpp"
-#include "editormodel.hpp"
 #include "filesystemservice.hpp"
 
 EditorModel::EditorModel(QObject* parent) : QAbstractListModel(parent) {}
@@ -245,6 +246,7 @@ void EditorModel::closeTabAt(int index) {
     removeTab();
     return;
   }
+#ifdef THEOIDE_MESSAGE_DIALOG_SUPPORTED
   if (_dialogService.isNull()) {
     qFatal() << "Tried to close a modified tab, but the dialog service is "
                 "null. Action aborted.";
@@ -256,6 +258,9 @@ void EditorModel::closeTabAt(int index) {
     removeTab();
   };
   _dialogService->addUnsavedChangesInFile(tabModel->name(), saveTab, removeTab);
+#else
+  removeTab();
+#endif  // THEOIDE_MESSAGEDIALOG_SUPPORTED
 }
 
 TabModelOptional EditorModel::tabAt(int index) const {
@@ -339,6 +344,7 @@ void EditorModel::updateAllTabNames() {
 
 void EditorModel::displayFileReadFailure(QSharedPointer<QFile> file,
                                          const FileError& error) {
+#ifdef THEOIDE_MESSAGE_DIALOG_SUPPORTED
   if (_dialogService.isNull()) {
     qFatal() << "An error occured but the dialog service was null:"
              << error.what();
@@ -367,4 +373,7 @@ void EditorModel::displayFileReadFailure(QSharedPointer<QFile> file,
     _dialogService->addFileDoesNotExist(fileDoesNotExistError->fileName());
     return;
   }
+#else
+  qWarning() << "An error occured:" << error.what();
+#endif
 }

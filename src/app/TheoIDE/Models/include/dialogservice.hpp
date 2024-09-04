@@ -13,6 +13,11 @@
 
 #include "messagedialogdto.hpp"
 
+#if defined(Q_OS_ANDROID) || defined(Q_OS_LINUX) || defined(Q_OS_MACOS) || \
+    defined(Q_OS_IOS) || defined(Q_OS_UNIX)
+#define THEOIDE_MESSAGE_DIALOG_SUPPORTED
+#endif
+
 class DialogService : public QObject {
   Q_OBJECT
   QML_ELEMENT
