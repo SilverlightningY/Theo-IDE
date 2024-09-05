@@ -83,6 +83,7 @@ Page {
                 ToolTip.visible: hovered
                 ToolTip.text: text
                 ToolTip.delay: parent.toolTipDelay
+                icon.color: ApplicationSettings.foreground
             }
             ToolButton {
                 action: openFileAction
@@ -91,6 +92,7 @@ Page {
                 ToolTip.visible: hovered
                 ToolTip.text: text
                 ToolTip.delay: parent.toolTipDelay
+                icon.color: ApplicationSettings.foreground
             }
             ToolButton {
                 action: saveAllFilesAction
@@ -99,6 +101,7 @@ Page {
                 ToolTip.visible: hovered
                 ToolTip.text: text
                 ToolTip.delay: parent.toolTipDelay
+                icon.color: ApplicationSettings.foreground
             }
 
             Label {
@@ -109,6 +112,7 @@ Page {
                 horizontalAlignment: headerToolBar.showMoreActionMenu ? Qt.AlignLeft : Qt.AlignHCenter
                 text: qsTr("Theo IDE")
                 verticalAlignment: Qt.AlignVCenter
+                color: ApplicationSettings.foreground
             }
 
             // Primary Action
@@ -118,6 +122,7 @@ Page {
                 ToolTip.visible: hovered
                 ToolTip.text: text
                 ToolTip.delay: parent.toolTipDelay
+                icon.color: ApplicationSettings.foreground
             }
             // Secondary Action
             ToolButton {
@@ -126,6 +131,7 @@ Page {
                 ToolTip.visible: hovered
                 ToolTip.text: text
                 ToolTip.delay: parent.toolTipDelay
+                icon.color: ApplicationSettings.foreground
             }
 
             ToolButton {
@@ -135,6 +141,7 @@ Page {
                 ToolTip.text: text
                 ToolTip.delay: parent.toolTipDelay
                 visible: !headerToolBar.showMoreActionMenu
+                icon.color: ApplicationSettings.foreground
             }
 
             ToolButton {
@@ -142,6 +149,7 @@ Page {
                 action: openMoreActionsMenuAction
                 display: AbstractButton.IconOnly
                 visible: headerToolBar.showMoreActionMenu
+                icon.color: ApplicationSettings.foreground
             }
         }
     }
@@ -191,7 +199,7 @@ Page {
         height: 24
         width: parent.width
         anchors.bottom: parent.bottom
-        color: ThemeSettings.primary
+        color: ApplicationSettings.primary
     }
 
     FileDialog {

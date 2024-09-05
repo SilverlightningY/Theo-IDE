@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   QGuiApplication app(argc, argv);
   app.setApplicationName("TheoIDE");
   app.setApplicationDisplayName("Theo IDE");
-  app.setOrganizationName("Theo IDE Development Team");
+  app.setOrganizationName("theoide");
   app.setOrganizationDomain("Theo-IDE.github.io");
 
   QIcon::setThemeSearchPaths({":/icons"});

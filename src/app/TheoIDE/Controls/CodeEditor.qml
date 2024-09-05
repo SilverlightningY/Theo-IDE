@@ -16,7 +16,7 @@ Item {
         anchors.right: parent.right
         background: Rectangle {
             implicitHeight: 48
-            color: ThemeSettings.background
+            color: ApplicationSettings.background
         }
         height: Math.max(background.implicitHeight, contentItem.implicitHeight)
 
@@ -38,7 +38,7 @@ Item {
         anchors.right: parent.right
         anchors.left: parent.left
         height: 1
-        color: ThemeSettings.primary
+        color: ApplicationSettings.primary
     }
 
     StackLayout {

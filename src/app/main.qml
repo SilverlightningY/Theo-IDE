@@ -10,14 +10,26 @@ ApplicationWindow {
     height: 1000
     visible: true
 
-    Material.accent: ThemeSettings.accent
-    Material.background: ThemeSettings.background
-    Material.foreground: ThemeSettings.foreground
-    Material.primary: ThemeSettings.primary
-    Material.theme: ThemeSettings.theme
+    palette {
+        buttonText: ApplicationSettings.foreground
+        text: ApplicationSettings.foreground
+        base: ApplicationSettings.background
+        dark: ApplicationSettings.foreground
+        windowText: ApplicationSettings.foreground
+        window: ApplicationSettings.background
+    }
+
+    Material.theme: ApplicationSettings.theme
+    Material.accent: ApplicationSettings.accent
+    Material.background: ApplicationSettings.background
+    Material.foreground: ApplicationSettings.foreground
+    Material.primary: ApplicationSettings.primary
 
     property DialogService dialogService: DialogService {}
-    property FileSystemService fileSystemService: FileSystemService {}
+    property FileSystemService fileSystemService: FileSystemService {
+        maxFileSizeBytes: ApplicationSettings.maxReadFileSizeBytes
+        blockSizeBytes: ApplicationSettings.blockSizeBytes
+    }
 
     ApplicationMessageDialog {
         model: MessageDialogModel {

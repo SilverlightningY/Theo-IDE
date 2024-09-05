@@ -12,7 +12,7 @@ Item {
 
     Rectangle {
         id: currentLineHighlight
-        color: ThemeSettings.primary
+        color: ApplicationSettings.primary
         anchors.left: parent.left
         anchors.right: parent.right
         height: parent.currentItem ? parent.currentItem.height : 0
