@@ -17,7 +17,7 @@ include(CPack)
 find_package(
     Qt6
     ${QT_VERSION}
-    COMPONENTS Core Quick QuickControls2 Sql Svg Concurrent
+    COMPONENTS Core Quick QuickControls2 Sql Svg Concurrent Qml
     REQUIRED
 )
 

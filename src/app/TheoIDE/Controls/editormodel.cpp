@@ -1,3 +1,5 @@
+#include "editormodel.hpp"
+
 #include <qabstractitemmodel.h>
 #include <qalgorithms.h>
 #include <qcontainerfwd.h>
@@ -8,6 +10,8 @@
 #include <qlogging.h>
 #include <qmutex.h>
 #include <qnamespace.h>
+#include <qpointer.h>
+#include <qquicktextdocument.h>
 #include <qscopedpointer.h>
 #include <qsharedpointer.h>
 #include <qstringview.h>
@@ -16,19 +20,24 @@
 #include <qvariant.h>
 
 #include <algorithm>
+#include <functional>
 #include <optional>
 
-#include "editormodel.hpp"
+#include "dialogservice.hpp"
 #include "filesystemservice.hpp"
 
 EditorModel::EditorModel(QObject* parent) : QAbstractListModel(parent) {}
 EditorModel::~EditorModel() {}
 
 QHash<int, QByteArray> EditorModel::roleNames() const {
-  return QHash<int, QByteArray>{
-      {Qt::DisplayRole, "display"},   {StoredTabTextRole, "storedTabText"},
-      {TabNameRole, "tabName"},       {DisplayTabNameRole, "displayTabName"},
-      {IsModifiedRole, "isModified"}, {IsTemporaryRole, "isTemporary"}};
+  return QHash<int, QByteArray>{{Qt::DisplayRole, "display"},
+                                {StoredTabTextRole, "storedTabText"},
+                                {TabNameRole, "tabName"},
+                                {DisplayTabNameRole, "displayTabName"},
+                                {IsModifiedRole, "isModified"},
+                                {IsTemporaryRole, "isTemporary"},
+                                {TextDocumentRole, "textDocument"},
+                                {OpenRole, "open"}};
 }
 
 int EditorModel::rowCount(const QModelIndex& index) const {
@@ -88,24 +97,76 @@ bool EditorModel::isTabTemporaryAt(int index) const {
 
 bool EditorModel::setData(const QModelIndex& index, const QVariant& data,
                           int role) {
+  switch (role) {
+    case TextDocumentRole:
+      return setTextDocumentVariantAt(index.row(), data);
+    case OpenRole:
+      return setOpenAt(index.row(), data);
+  }
   return false;
 }
 
+bool EditorModel::setOpenAt(int index, const QVariant& data) {
+  if (!data.canConvert<bool>()) {
+    return false;
+  }
+  if (!data.toBool()) {
+    closeTabAt(index);
+  }
+  return true;
+}
+
+bool EditorModel::setTextDocumentVariantAt(int index, const QVariant& data) {
+  auto tabOptional = tabAt(index);
+  if (!tabOptional.has_value() || tabOptional.value().isNull()) {
+    qFatal() << "Trying to set QTextDocument for tab at index" << index
+             << " but the tab does not exist";
+    return false;
+  }
+  if (!data.canConvert<QQuickTextDocument*>()) {
+    qFatal() << "QVariant can not be converted to QQuickTextDocument*";
+    return false;
+  }
+  QPointer<QQuickTextDocument> quickTextDocument =
+      QPointer(data.value<QQuickTextDocument*>());
+  if (quickTextDocument.isNull()) {
+    qFatal() << "Cast from QVariant to QQuickTextDocument* failed";
+    return false;
+  }
+  auto tab = tabOptional.value();
+  tab->setTextDocument(quickTextDocument->textDocument());
+  return true;
+}
+
 FileSystemService* EditorModel::fileSystemService() const {
-  return _fileSystemService.get();
+  return _fileSystemService.data();
+}
+
+DialogService* EditorModel::dialogService() const {
+  return _dialogService.data();
 }
 
 void EditorModel::setFileSystemService(FileSystemService* fileSystemService) {
   if (_fileSystemService != fileSystemService) {
-    if (_fileSystemService) {
-      disconnect(_fileSystemService, nullptr, this, nullptr);
-    }
+    disconnectFileSystemService();
     _fileSystemService = QPointer<FileSystemService>(fileSystemService);
-    if (_fileSystemService) {
-      connect(_fileSystemService, &FileSystemService::fileRead, this,
-              &EditorModel::createTabFromFile);
-    }
     emit fileSystemServiceChanged();
+    connectFileSystemService();
+  }
+}
+
+void EditorModel::disconnectFileSystemService() {
+  if (_fileSystemService) {
+    disconnect(_fileSystemService, nullptr, this, nullptr);
+  }
+}
+
+void EditorModel::connectFileSystemService() {
+  if (_fileSystemService) {
+    connect(_fileSystemService, &FileSystemService::fileRead, this,
+            &EditorModel::createTabFromFile);
+    connect(_fileSystemService, &FileSystemService::fileReadFailed, this,
+            &EditorModel::displayFileReadFailure);
   }
 }
 
@@ -124,6 +185,13 @@ void EditorModel::createTabFromFile(QSharedPointer<QFile> file,
   const QString tabName = createTabNameRelativeToMainTab(file);
   _tabs.append(QSharedPointer<TabModel>(new TabModel(tabName, file, content)));
   endInsertRows();
+}
+
+void EditorModel::setDialogService(DialogService* dialogService) {
+  if (_dialogService != dialogService) {
+    _dialogService = QPointer(dialogService);
+    emit dialogServiceChanged();
+  }
 }
 
 void EditorModel::saveAllTabs() {
@@ -161,14 +229,38 @@ void EditorModel::runScriptInDebugMode() {}
 void EditorModel::closeTabAt(int index) {
   QMutexLocker locker(&_tabsMutex);
   TabModelOptional tab = tabAt(index);
-  if (!tab.has_value()) {
+  if (!tab.has_value() || tab.value().isNull()) {
+    qFatal() << "Trying to close tab at index" << index
+             << "but the tab does not exist";
     return;
   }
   const QSharedPointer<TabModel> tabModel = tab.value();
-  beginRemoveRows(QModelIndex(), index, index);
-  _tabs.removeAt(index);
-  removeTemporaryTabIndex(tabModel);
-  endRemoveRows();
+  const std::function<void(void)> removeTab = [this, index,
+                                               tabModel]() -> void {
+    beginRemoveRows(QModelIndex(), index, index);
+    _tabs.removeAt(index);
+    removeTemporaryTabIndex(tabModel);
+    endRemoveRows();
+  };
+  if (!tabModel->isModified()) {
+    removeTab();
+    return;
+  }
+#ifdef THEOIDE_MESSAGE_DIALOG_SUPPORTED
+  if (_dialogService.isNull()) {
+    qFatal() << "Tried to close a modified tab, but the dialog service is "
+                "null. Action aborted.";
+    return;
+  }
+  const std::function<void(void)> saveTab = [this, tabModel,
+                                             removeTab]() -> void {
+    this->saveTab(tabModel);
+    removeTab();
+  };
+  _dialogService->addUnsavedChangesInFile(tabModel->name(), saveTab, removeTab);
+#else
+  removeTab();
+#endif  // THEOIDE_MESSAGEDIALOG_SUPPORTED
 }
 
 TabModelOptional EditorModel::tabAt(int index) const {
@@ -248,4 +340,40 @@ void EditorModel::updateAllTabNames() {
     emit dataChanged(modelIndex, modelIndex);
     ++index;
   }
+}
+
+void EditorModel::displayFileReadFailure(QSharedPointer<QFile> file,
+                                         const FileError& error) {
+#ifdef THEOIDE_MESSAGE_DIALOG_SUPPORTED
+  if (_dialogService.isNull()) {
+    qFatal() << "An error occured but the dialog service was null:"
+             << error.what();
+    return;
+  }
+
+  const auto fileReadError =
+      QScopedPointer(dynamic_cast<const FileReadError*>(&error));
+
+  if (fileReadError) {
+    _dialogService->addReadPermissionDenied(fileReadError->fileName());
+    return;
+  }
+
+  const auto maxFileSizeExceededError =
+      QScopedPointer(dynamic_cast<const MaxReadFileSizeExceededError*>(&error));
+  if (maxFileSizeExceededError) {
+    _dialogService->addMaxReadFileSizeExceeded(
+        maxFileSizeExceededError->fileName(),
+        maxFileSizeExceededError->maxFileSizeBytes());
+    return;
+  }
+  const auto fileDoesNotExistError =
+      QScopedPointer(dynamic_cast<const FileDoesNotExistError*>(&error));
+  if (fileDoesNotExistError) {
+    _dialogService->addFileDoesNotExist(fileDoesNotExistError->fileName());
+    return;
+  }
+#else
+  qWarning() << "An error occured:" << error.what();
+#endif
 }

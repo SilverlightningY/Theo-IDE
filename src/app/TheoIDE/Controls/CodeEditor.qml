@@ -1,4 +1,3 @@
-pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls.Material
 import QtQuick.Layouts
@@ -25,8 +24,8 @@ Item {
             model: root.model
             delegate: ClosableTabButton {
                 required property string displayTabName
-                required property int index
-                onCloseTriggered: root.model.closeTabAt(index)
+                required property var model
+                onCloseTriggered: model.open = false
                 text: displayTabName
                 width: implicitWidth
             }
@@ -55,7 +54,9 @@ Item {
             model: root.model
             delegate: TabContent {
                 required property string storedTabText
+                required property var model
                 text: storedTabText
+                Component.onCompleted: model.textDocument = textDocument
             }
         }
     }

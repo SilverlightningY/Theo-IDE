@@ -4,6 +4,7 @@ qt_add_qml_module(
     TheoIDEControls
     VERSION 1.0
     QML_FILES
+        ApplicationMessageDialog.qml
         ClosableTabButton.qml
         CodeEditor.qml
         ExecutionStatePanel.qml
@@ -17,12 +18,10 @@ qt_add_qml_module(
         QtQuick.Controls.Material
         TheoIDE.Persistence
         TheoIDE.Models
-)
-
-target_sources(
-    TheoIDEControls
-    PRIVATE lineinfocolumnmodel.cpp editormodel.cpp
-    PUBLIC include/lineinfocolumnmodel.hpp include/editormodel.hpp
+    SOURCES
+        editormodel.cpp include/editormodel.hpp
+        lineinfocolumnmodel.cpp include/lineinfocolumnmodel.hpp
+        messagedialogmodel.cpp include/messagedialogmodel.hpp
 )
 
 target_include_directories(
@@ -35,8 +34,9 @@ target_link_libraries(
     PUBLIC
         TheoIDEModels
         TheoIDEPersistence
+        Qt::Concurrent
         Qt::Core
+        Qt::Qml
         Qt::Quick
         Qt::QuickControls2
-        Qt::Concurrent
 )

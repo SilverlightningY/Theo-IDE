@@ -2,8 +2,10 @@ import TheoIDE.Pages
 import QtQuick.Controls.Material
 import TheoIDE.Persistence
 import TheoIDE.Models
+import TheoIDE.Controls
 
 ApplicationWindow {
+    id: root
     width: 1000
     height: 1000
     visible: true
@@ -14,6 +16,15 @@ ApplicationWindow {
     Material.primary: ThemeSettings.primary
     Material.theme: ThemeSettings.theme
 
+    property DialogService dialogService: DialogService {}
+    property FileSystemService fileSystemService: FileSystemService {}
+
+    ApplicationMessageDialog {
+        model: MessageDialogModel {
+            dialogService: root.dialogService
+        }
+    }
+
     StackView {
         id: stackView
 
@@ -21,7 +32,8 @@ ApplicationWindow {
 
         initialItem: EditorPage {
             model: EditorModel {
-                fileSystemService: FileSystemService {}
+                fileSystemService: root.fileSystemService
+                dialogService: root.dialogService
             }
         }
     }

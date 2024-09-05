@@ -5,7 +5,10 @@ qt_add_qml_module(
     VERSION 1.0
     URI TheoIDE.Models
     SOURCES
+        dialogbutton.cpp include/dialogbutton.hpp
+        dialogservice.cpp include/dialogservice.hpp
         filesystemservice.cpp include/filesystemservice.hpp
+        messagedialogdto.cpp include/messagedialogdto.hpp
 )
 
 target_include_directories(
@@ -13,4 +16,7 @@ target_include_directories(
     PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include/
 )
 
-target_link_libraries(TheoIDEModels PRIVATE Qt::Core Qt::Quick Qt::Concurrent)
+target_link_libraries(
+    TheoIDEModels
+    PRIVATE Qt::Core Qt::Qml Qt::Quick Qt::Concurrent
+)

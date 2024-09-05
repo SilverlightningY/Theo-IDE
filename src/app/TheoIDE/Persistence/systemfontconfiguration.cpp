@@ -1,6 +1,6 @@
-#include "include/systemfontconfiguration.hpp"
-
 #include <qfontdatabase.h>
+
+#include "include/systemfontconfiguration.hpp"
 
 SystemFontConfiguraton::SystemFontConfiguraton(QObject* parent)
     : QObject(parent) {}
