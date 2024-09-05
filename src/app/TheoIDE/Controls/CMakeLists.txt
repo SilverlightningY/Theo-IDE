@@ -7,10 +7,13 @@ qt_add_qml_module(
         ApplicationMessageDialog.qml
         ClosableTabButton.qml
         CodeEditor.qml
+        DebugControls.qml
         ExecutionStatePanel.qml
+        LabeledControl.qml
         LineInfoCell.qml
         LineInfoColumn.qml
         PlainTextEditor.qml
+        ResultTable.qml
         TabContent.qml
     URI TheoIDE.Controls
     IMPORTS
