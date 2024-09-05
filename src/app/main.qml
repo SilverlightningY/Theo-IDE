@@ -6,8 +6,8 @@ import TheoIDE.Controls
 
 ApplicationWindow {
     id: root
-    width: 1000
-    height: 1000
+    width: ApplicationSettings.windowWidth
+    height: ApplicationSettings.windowHeight
     visible: true
 
     palette {

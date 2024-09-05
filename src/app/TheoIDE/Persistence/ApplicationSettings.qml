@@ -6,6 +6,8 @@ import QtQuick.Controls.Material
 import TheoIDE.Persistence
 
 Item {
+    id: root
+
     Settings {
         id: themeSettings
         category: "Theme"
@@ -58,4 +60,6 @@ Item {
 
     property alias maxReadFileSizeBytes: generalSettings.maxReadFileSizeBytes
     property alias blockSizeBytes: generalSettings.blockSizeBytes
+    property alias windowWidth: windowSettings.width
+    property alias windowHeight: windowSettings.height
 }
