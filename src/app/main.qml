@@ -30,6 +30,7 @@ ApplicationWindow {
         maxFileSizeBytes: ApplicationSettings.maxReadFileSizeBytes
         blockSizeBytes: ApplicationSettings.blockSizeBytes
     }
+    property CompilerService compilerService: CompilerService {}
 
     ApplicationMessageDialog {
         model: MessageDialogModel {
@@ -46,6 +47,7 @@ ApplicationWindow {
             model: EditorModel {
                 fileSystemService: root.fileSystemService
                 dialogService: root.dialogService
+                compilerService: compilerService
             }
         }
     }
