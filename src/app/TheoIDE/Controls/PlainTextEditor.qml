@@ -32,6 +32,7 @@ ScrollView {
                 pointSize: ApplicationSettings.editorFontSize
             }
             onCursorRectangleChanged: flickable.scrollIntoView(cursorRectangle)
+            tabStopDistance: ApplicationSettings.tabStopDistance
 
             // Workaround to prevent the keyboard from closing on Android
             Keys.priority: Keys.BeforeItem
@@ -40,6 +41,21 @@ ScrollView {
             }
             Keys.onReturnPressed: function (event) {
                 insertNewline(event);
+            }
+
+            Keys.onTabPressed: function (event) {
+                insertTab();
+                event.accepted = true;
+            }
+
+            function insertTab(): void {
+                if (ApplicationSettings.expandTabsToSpaces) {
+                    for (let i = 0; i < ApplicationSettings.tabStopDistanceInSpaces; ++i) {
+                        textEdit.insert(textEdit.cursorPosition, " ");
+                    }
+                } else {
+                    textEdit.insert(textEdit.cursorPosition, "\t");
+                }
             }
 
             function insertNewline(event: KeyEvent): void {
