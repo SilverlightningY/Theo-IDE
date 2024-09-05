@@ -1,3 +1,5 @@
+#include "filesystemservice.hpp"
+
 #include <qcontainerfwd.h>
 #include <qdir.h>
 #include <qfiledevice.h>
@@ -5,10 +7,11 @@
 #include <qfuturewatcher.h>
 #include <qlist.h>
 #include <qmutex.h>
+#include <qpromise.h>
 #include <qsharedpointer.h>
 #include <qtconcurrentrun.h>
 
-#include "filesystemservice.hpp"
+#include <exception>
 
 const int DEFAULT_MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024;
 const int DEFAULT_BLOCK_SIZE_BYTES = 1024;
@@ -107,7 +110,15 @@ QString FileSystemService::readFileSync(QSharedPointer<QFile> file) const {
 
 QFuture<QString> FileSystemService::readFileAsync(
     QSharedPointer<QFile> file) const {
-  return QtConcurrent::run(&FileSystemService::readFileSync, this, file);
+  const std::function<void(QPromise<QString>&)> read =
+      [this, file](QPromise<QString>& promise) -> void {
+    try {
+      promise.addResult(this->readFileSync(file));
+    } catch (...) {
+      promise.setException(std::current_exception());
+    }
+  };
+  return QtConcurrent::run(read);
 }
 
 void FileSystemService::addFileToBeingRead(QSharedPointer<QFile> file) {

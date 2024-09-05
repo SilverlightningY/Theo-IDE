@@ -15,7 +15,7 @@
 class FileError : public std::exception {
  public:
   FileError(const QString &fileName) : _fileName(fileName) {}
-  const QString &fileName() const noexcept { return _fileName; }
+  virtual const QString &fileName() const noexcept { return _fileName; }
   virtual const char *what() const noexcept override {
     return _message.toLocal8Bit().data();
   }
