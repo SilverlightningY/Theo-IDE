@@ -20,6 +20,29 @@ Item {
         }
         height: Math.max(background.implicitHeight, contentItem.implicitHeight)
 
+        property int previousCount: -1
+
+        onCountChanged: {
+            if (previousCount < count) {
+                setCurrentIndex(count - 1);
+            }
+            previousCount = count;
+        }
+
+        function updateModelCurrentTabIndex(): void {
+            root.model.currentTabIndex = currentIndex;
+        }
+        function updateCurrentIndex(index: int): void {
+            currentIndex = index;
+        }
+
+        Component.onCompleted: {
+            currentIndex = root.model.currentTabIndex;
+            root.model.currentTabIndexChanged.connect(updateCurrentIndex);
+            currentIndexChanged.connect(updateModelCurrentTabIndex);
+            previousCount = count;
+        }
+
         Repeater {
             model: root.model
             delegate: ClosableTabButton {

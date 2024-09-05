@@ -1,3 +1,5 @@
+#include "editormodel.hpp"
+
 #include <qabstractitemmodel.h>
 #include <qalgorithms.h>
 #include <qcontainerfwd.h>
@@ -13,7 +15,9 @@
 #include <qscopedpointer.h>
 #include <qsharedpointer.h>
 #include <qstringview.h>
+#include <qtpreprocessorsupport.h>
 #include <qttranslation.h>
+#include <qtypes.h>
 #include <qurl.h>
 #include <qvariant.h>
 
@@ -21,11 +25,18 @@
 #include <functional>
 #include <optional>
 
+#include "compilerservice.hpp"
 #include "dialogservice.hpp"
-#include "editormodel.hpp"
 #include "filesystemservice.hpp"
 
-EditorModel::EditorModel(QObject* parent) : QAbstractListModel(parent) {}
+EditorModel::EditorModel(QObject* parent) : QAbstractListModel(parent) {
+  connect(this, &QAbstractListModel::rowsInserted, this,
+          &EditorModel::updateMainTabIndex);
+  connect(this, &QAbstractListModel::rowsRemoved, this,
+          &EditorModel::updateMainTabIndex);
+  connect(this, &EditorModel::mainTabIndexChanged, this,
+          &EditorModel::updateAllTabNames);
+}
 EditorModel::~EditorModel() {}
 
 QHash<int, QByteArray> EditorModel::roleNames() const {
@@ -36,7 +47,8 @@ QHash<int, QByteArray> EditorModel::roleNames() const {
                                 {IsModifiedRole, "isModified"},
                                 {IsTemporaryRole, "isTemporary"},
                                 {TextDocumentRole, "textDocument"},
-                                {OpenRole, "open"}};
+                                {OpenRole, "open"},
+                                {IsReadOnlyRole, "isReadOnly"}};
 }
 
 int EditorModel::rowCount(const QModelIndex& index) const {
@@ -56,11 +68,18 @@ QVariant EditorModel::data(const QModelIndex& index, int role) const {
       return isTabModifiedAt(index.row());
     case IsTemporaryRole:
       return isTabTemporaryAt(index.row());
+    case IsReadOnlyRole:
+      return isTabReadOnlyAt(index.row());
   }
   return QVariant();
 }
 
-QString EditorModel::storedTabTextAt(int index) const {
+bool EditorModel::isTabReadOnlyAt(qsizetype index) const {
+  Q_UNUSED(index)
+  return isRunning();
+}
+
+QString EditorModel::storedTabTextAt(qsizetype index) const {
   const TabModelOptional tab = tabAt(index);
   if (tab.has_value() && !tab.value().isNull()) {
     return tab.value()->storedText();
@@ -68,7 +87,7 @@ QString EditorModel::storedTabTextAt(int index) const {
   return QString();
 }
 
-QString EditorModel::tabNameAt(int index) const {
+QString EditorModel::tabNameAt(qsizetype index) const {
   const TabModelOptional tab = tabAt(index);
   if (tab.has_value() && !tab.value().isNull()) {
     return tab.value()->name();
@@ -76,7 +95,7 @@ QString EditorModel::tabNameAt(int index) const {
   return QString();
 }
 
-QString EditorModel::displayTabNameAt(int index) const {
+QString EditorModel::displayTabNameAt(qsizetype index) const {
   const TabModelOptional tab = tabAt(index);
   if (tab.has_value() && !tab.value().isNull()) {
     return tab.value()->displayName();
@@ -84,12 +103,12 @@ QString EditorModel::displayTabNameAt(int index) const {
   return QString();
 }
 
-bool EditorModel::isTabModifiedAt(int index) const {
+bool EditorModel::isTabModifiedAt(qsizetype index) const {
   const TabModelOptional tab = tabAt(index);
   return tab.has_value() && !tab.value().isNull() && tab.value()->isModified();
 }
 
-bool EditorModel::isTabTemporaryAt(int index) const {
+bool EditorModel::isTabTemporaryAt(qsizetype index) const {
   const TabModelOptional tab = tabAt(index);
   return tab.has_value() && !tab.value().isNull() && tab.value()->isTemporary();
 }
@@ -105,7 +124,7 @@ bool EditorModel::setData(const QModelIndex& index, const QVariant& data,
   return false;
 }
 
-bool EditorModel::setOpenAt(int index, const QVariant& data) {
+bool EditorModel::setOpenAt(qsizetype index, const QVariant& data) {
   if (!data.canConvert<bool>()) {
     return false;
   }
@@ -115,21 +134,22 @@ bool EditorModel::setOpenAt(int index, const QVariant& data) {
   return true;
 }
 
-bool EditorModel::setTextDocumentVariantAt(int index, const QVariant& data) {
+bool EditorModel::setTextDocumentVariantAt(qsizetype index,
+                                           const QVariant& data) {
   auto tabOptional = tabAt(index);
   if (!tabOptional.has_value() || tabOptional.value().isNull()) {
-    qFatal() << "Trying to set QTextDocument for tab at index" << index
-             << " but the tab does not exist";
+    qCritical() << "Trying to set QTextDocument for tab at index" << index
+                << " but the tab does not exist";
     return false;
   }
   if (!data.canConvert<QQuickTextDocument*>()) {
-    qFatal() << "QVariant can not be converted to QQuickTextDocument*";
+    qCritical() << "QVariant can not be converted to QQuickTextDocument*";
     return false;
   }
   QPointer<QQuickTextDocument> quickTextDocument =
       QPointer(data.value<QQuickTextDocument*>());
   if (quickTextDocument.isNull()) {
-    qFatal() << "Cast from QVariant to QQuickTextDocument* failed";
+    qCritical() << "Cast from QVariant to QQuickTextDocument* failed";
     return false;
   }
   auto tab = tabOptional.value();
@@ -143,6 +163,17 @@ FileSystemService* EditorModel::fileSystemService() const {
 
 DialogService* EditorModel::dialogService() const {
   return _dialogService.data();
+}
+
+CompilerService* EditorModel::compilerService() const {
+  return _compilerService.data();
+}
+
+void EditorModel::setCompilerService(CompilerService* compilerService) {
+  if (_compilerService != compilerService) {
+    _compilerService = QPointer(compilerService);
+    emit compilerServiceChanged();
+  }
 }
 
 void EditorModel::setFileSystemService(FileSystemService* fileSystemService) {
@@ -199,7 +230,7 @@ void EditorModel::saveAllTabs() {
   }
 }
 
-void EditorModel::saveTabAt(int index) {
+void EditorModel::saveTabAt(qsizetype index) {
   TabModelOptional tab = tabAt(index);
   if (tab.has_value()) {
     saveTab(tab.value());
@@ -221,16 +252,51 @@ void EditorModel::createNewTab() {
   emit endInsertRows();
 }
 
-void EditorModel::runScript() {}
+bool EditorModel::isRunning() const { return _isRunning; }
+
+void EditorModel::setIsRunning(bool isRunning) {
+  if (_isRunning != isRunning) {
+    _isRunning = isRunning;
+    emit isRunningChanged(isRunning);
+  }
+}
+
+void EditorModel::runScript() {
+  if (_compilerService.isNull()) {
+    qCritical() << "Unable to compile script because compiler service is null";
+    return;
+  }
+  setIsRunning(true);
+  const CompilationTask task = createCompilationTaskFromTabContent();
+  _currentRunRevision = task.revision();
+  _compilerService->compile(task);
+}
+
+CompilationTask EditorModel::createCompilationTaskFromTabContent() const {
+  int revision = 0;
+  QMap<QString, QString> content;
+  for (auto tab : _tabs) {
+    if (tab.isNull()) {
+      continue;
+    }
+    auto tabTextDocument = tab->textDocument();
+    if (tabTextDocument.isNull()) {
+      continue;
+    }
+    revision += tabTextDocument->revision();
+    content.insert(tab->name(), tabTextDocument->toPlainText());
+  }
+  return CompilationTask(revision, content);
+}
 
 void EditorModel::runScriptInDebugMode() {}
 
-void EditorModel::closeTabAt(int index) {
+void EditorModel::closeTabAt(qsizetype index) {
   QMutexLocker locker(&_tabsMutex);
   TabModelOptional tab = tabAt(index);
   if (!tab.has_value() || tab.value().isNull()) {
-    qFatal() << "Trying to close tab at index" << index
-             << "but the tab does not exist";
+    qCritical() << "Trying to close tab at index" << index
+                << "but the tab does not exist";
     return;
   }
   const QSharedPointer<TabModel> tabModel = tab.value();
@@ -246,8 +312,8 @@ void EditorModel::closeTabAt(int index) {
     return;
   }
   if (_dialogService.isNull()) {
-    qFatal() << "Tried to close a modified tab, but the dialog service is "
-                "null. Action aborted.";
+    qCritical() << "Tried to close a modified tab, but the dialog service is "
+                   "null. Action aborted.";
     return;
   }
   const std::function<void(void)> saveTab = [this, tabModel,
@@ -258,14 +324,14 @@ void EditorModel::closeTabAt(int index) {
   _dialogService->addUnsavedChangesInFile(tabModel->name(), saveTab, removeTab);
 }
 
-TabModelOptional EditorModel::tabAt(int index) const {
+TabModelOptional EditorModel::tabAt(qsizetype index) const {
   if (tabIndexOutOfRange(index) || _tabs.at(index).isNull()) {
     return std::nullopt;
   }
   return _tabs.at(index);
 }
 
-bool EditorModel::tabIndexOutOfRange(int index) const {
+bool EditorModel::tabIndexOutOfRange(qsizetype index) const {
   return index >= _tabs.size() || index < 0;
 }
 
@@ -317,49 +383,58 @@ void EditorModel::setMainTabIndex(int index) {
 }
 
 void EditorModel::updateAllTabNames() {
-  unsigned int index = 0;
-  for (auto tab : _tabs) {
-    const FileOptional fileOptional = tab->file();
-    if (!fileOptional.has_value()) {
-      ++index;
-      continue;
-    }
-    const auto file = fileOptional.value();
-    const auto newTabName = createTabNameRelativeToMainTab(file);
-    if (newTabName == tab->name()) {
-      ++index;
-      continue;
-    }
-    tab->setName(newTabName);
-    const QModelIndex modelIndex = createIndex(index, 0);
-    emit dataChanged(modelIndex, modelIndex);
-    ++index;
+  for (qsizetype i = 0; i < _tabs.size(); ++i) {
+    updateTabNameAt(i);
   }
+}
+
+void EditorModel::updateTabNameAt(qsizetype index) {
+  auto tabOptional = tabAt(index);
+  if (!tabOptional.has_value() || tabOptional.value().isNull()) {
+    return;
+  }
+  auto tab = tabOptional.value();
+  const FileOptional fileOptional = tab->file();
+  if (!fileOptional.has_value()) {
+    return;
+  }
+  const auto file = fileOptional.value();
+  const auto newTabName = createTabNameRelativeToMainTab(file);
+  if (newTabName == tab->name()) {
+    return;
+  }
+  tab->setName(newTabName);
+  const QModelIndex modelIndex = createIndex(index, 0);
+  emit dataChanged(modelIndex, modelIndex);
 }
 
 void EditorModel::displayFileReadFailure(QSharedPointer<QFile> file,
                                          const FileError& error) {
   if (_dialogService.isNull()) {
-    qFatal() << "An error occured but the dialog service was null:"
-             << error.what();
+    qCritical() << "An error occured but the dialog service was null:"
+                << error.what();
     return;
   }
 
-  const auto fileReadError =
-      QScopedPointer(dynamic_cast<const FileReadError*>(&error));
+  {
+    const auto fileReadError =
+        QScopedPointer(dynamic_cast<const FileReadError*>(&error));
 
-  if (fileReadError) {
-    _dialogService->addReadPermissionDenied(fileReadError->fileName());
-    return;
+    if (fileReadError) {
+      _dialogService->addReadPermissionDenied(fileReadError->fileName());
+      return;
+    }
   }
 
-  const auto maxFileSizeExceededError =
-      QScopedPointer(dynamic_cast<const MaxReadFileSizeExceededError*>(&error));
-  if (maxFileSizeExceededError) {
-    _dialogService->addMaxReadFileSizeExceeded(
-        maxFileSizeExceededError->fileName(),
-        maxFileSizeExceededError->maxFileSizeBytes());
-    return;
+  {
+    const auto maxFileSizeExceededError = QScopedPointer(
+        dynamic_cast<const MaxReadFileSizeExceededError*>(&error));
+    if (maxFileSizeExceededError) {
+      _dialogService->addMaxReadFileSizeExceeded(
+          maxFileSizeExceededError->fileName(),
+          maxFileSizeExceededError->maxFileSizeBytes());
+      return;
+    }
   }
   const auto fileDoesNotExistError =
       QScopedPointer(dynamic_cast<const FileDoesNotExistError*>(&error));
@@ -368,3 +443,27 @@ void EditorModel::displayFileReadFailure(QSharedPointer<QFile> file,
     return;
   }
 }
+
+void EditorModel::updateMainTabIndex() {
+  if (_mainTabIndex < 0 && _tabs.size() > 0) {
+    setMainTabIndex(0);
+    return;
+  }
+  if (_tabs.size() == 0) {
+    setMainTabIndex(-1);
+    return;
+  }
+  if (_mainTabIndex >= _tabs.size()) {
+    setMainTabIndex(0);
+    return;
+  }
+}
+
+void EditorModel::setCurrentTabIndex(int currentTabIndex) {
+  if (_currentTabIndex != currentTabIndex) {
+    _currentTabIndex = currentTabIndex;
+    emit currentTabIndexChanged(currentTabIndex);
+  }
+}
+
+int EditorModel::currentTabIndex() const { return _currentTabIndex; }

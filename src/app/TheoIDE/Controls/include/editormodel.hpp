@@ -15,11 +15,13 @@
 #include <qstringview.h>
 #include <qtextdocument.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 #include <qurl.h>
 #include <qvariant.h>
 
 #include <optional>
 
+#include "compilerservice.hpp"
 #include "dialogservice.hpp"
 #include "filesystemservice.hpp"
 
@@ -80,10 +82,15 @@ class EditorModel : public QAbstractListModel {
   Q_OBJECT
   Q_PROPERTY(int mainTabIndex READ mainTabIndex WRITE setMainTabIndex NOTIFY
                  mainTabIndexChanged)
+  Q_PROPERTY(int currentTabIndex READ currentTabIndex WRITE setCurrentTabIndex
+                 NOTIFY currentTabIndexChanged)
   Q_PROPERTY(FileSystemService* fileSystemService READ fileSystemService WRITE
                  setFileSystemService NOTIFY fileSystemServiceChanged)
   Q_PROPERTY(DialogService* dialogService READ dialogService WRITE
                  setDialogService NOTIFY dialogServiceChanged)
+  Q_PROPERTY(CompilerService* compilerService READ compilerService WRITE
+                 setCompilerService NOTIFY compilerServiceChanged)
+  Q_PROPERTY(bool isRunning READ isRunning NOTIFY isRunningChanged)
   QML_ELEMENT
  public:
   EditorModel(QObject* parent = nullptr);
@@ -96,15 +103,21 @@ class EditorModel : public QAbstractListModel {
     IsTemporaryRole,
     TextDocumentRole,
     OpenRole,
+    IsReadOnlyRole,
   };
+  CompilerService* compilerService() const;
+  DialogService* dialogService() const;
+  FileSystemService* fileSystemService() const;
   QHash<int, QByteArray> roleNames() const override;
-  int rowCount(const QModelIndex& index) const override;
   QVariant data(const QModelIndex& index, int role) const override;
   bool setData(const QModelIndex& index, const QVariant& data,
                int role) override;
   int mainTabIndex() const;
-  FileSystemService* fileSystemService() const;
-  DialogService* dialogService() const;
+  int currentTabIndex() const;
+  int rowCount(const QModelIndex& index) const override;
+  bool isRunning() const;
+  void saveTabAt(qsizetype index);
+  void closeTabAt(qsizetype index);
 
   Q_INVOKABLE
   void openFile(const QUrl& url);
@@ -116,51 +129,62 @@ class EditorModel : public QAbstractListModel {
   void runScript();
   Q_INVOKABLE
   void runScriptInDebugMode();
-  Q_INVOKABLE
-  void saveTabAt(int index);
-  Q_INVOKABLE
-  void closeTabAt(int index);
 
  public slots:
-  void setMainTabIndex(int index);
-  void setFileSystemService(FileSystemService* fileSystemService);
   void createTabFromFile(QSharedPointer<QFile> file, const QString& storedText);
-  void setDialogService(DialogService* dialogService);
   void displayFileReadFailure(QSharedPointer<QFile> file,
                               const FileError& error);
+  void setCompilerService(CompilerService* compilerservice);
+  void setDialogService(DialogService* dialogService);
+  void setFileSystemService(FileSystemService* fileSystemService);
+  void setMainTabIndex(int index);
+  void setCurrentTabIndex(int index);
 
  signals:
-  void mainTabIndexChanged(int index);
-  void fileSystemServiceChanged();
+  void currentTabIndexChanged(int index);
+  void compilerServiceChanged();
   void dialogServiceChanged();
+  void fileSystemServiceChanged();
+  void mainTabIndexChanged(int index);
+  void isRunningChanged(bool isRunning);
+
+ protected slots:
+  void updateMainTabIndex();
+  void updateAllTabNames();
 
  private:
-  int _mainTabIndex = 0;
+  int _mainTabIndex = -1;
+  int _currentTabIndex = -1;
   QPointer<FileSystemService> _fileSystemService;
   QPointer<DialogService> _dialogService;
+  QPointer<CompilerService> _compilerService;
   QList<QSharedPointer<TabModel>> _tabs;
   mutable QMutex _tabsMutex;
   mutable QMutex _temporaryTabIndexesMutex;
   QMap<QSharedPointer<TabModel>, int> _temporaryTabIndexes;
+  long long _currentRunRevision = 0;
+  bool _isRunning = false;
 
-  QString tabNameAt(int index) const;
-  QString storedTabTextAt(int index) const;
-  bool isTabModifiedAt(int index) const;
-  bool isTabTemporaryAt(int index) const;
-  bool tabIndexOutOfRange(int index) const;
-  bool setTabTextAt(const QModelIndex& index, const QVariant& data);
+  QString tabNameAt(qsizetype index) const;
+  QString storedTabTextAt(qsizetype index) const;
+  bool isTabModifiedAt(qsizetype index) const;
+  bool isTabTemporaryAt(qsizetype index) const;
+  bool isTabReadOnlyAt(qsizetype index) const;
+  bool tabIndexOutOfRange(qsizetype index) const;
   TabModelOptional mainTab() const;
-  TabModelOptional tabAt(int index) const;
+  TabModelOptional tabAt(qsizetype index) const;
   QString createTabNameRelativeToMainTab(QSharedPointer<QFile> file) const;
   void saveTab(QSharedPointer<TabModel> tab);
-  QString displayTabNameAt(int index) const;
+  QString displayTabNameAt(qsizetype index) const;
   int appendTemporaryTabIndex(QSharedPointer<TabModel> tab);
   void removeTemporaryTabIndex(QSharedPointer<TabModel> tab);
-  void updateAllTabNames();
   void disconnectFileSystemService();
   void connectFileSystemService();
-  bool setTextDocumentVariantAt(int index, const QVariant& data);
-  bool setOpenAt(int index, const QVariant& data);
+  bool setTextDocumentVariantAt(qsizetype index, const QVariant& data);
+  bool setOpenAt(qsizetype index, const QVariant& data);
+  CompilationTask createCompilationTaskFromTabContent() const;
+  void setIsRunning(bool isRunning);
+  void updateTabNameAt(qsizetype index);
 };
 
 #endif
