@@ -172,8 +172,10 @@ CompilerService* EditorModel::compilerService() const {
 
 void EditorModel::setCompilerService(CompilerService* compilerService) {
   if (_compilerService != compilerService) {
+    disconnectCompilerService();
     _compilerService = QPointer(compilerService);
     emit compilerServiceChanged();
+    connectCompilerService();
   }
 }
 
@@ -586,3 +588,45 @@ void EditorModel::setCurrentTabIndex(int currentTabIndex) {
 }
 
 int EditorModel::currentTabIndex() const { return _currentTabIndex; }
+
+void EditorModel::connectCompilerService() {
+  if (_compilerService.isNull()) {
+    return;
+  }
+  connect(_compilerService, &CompilerService::atLeastRevisionAvailable, this,
+          &EditorModel::compilationRevisionAvailable);
+  connect(this, &EditorModel::rowsInserted, _compilerService,
+          &CompilerService::reset);
+  connect(this, &EditorModel::rowsRemoved, _compilerService,
+          &CompilerService::reset);
+  connect(this, &EditorModel::mainTabIndexChanged, _compilerService,
+          &CompilerService::reset);
+}
+
+void EditorModel::disconnectCompilerService() {
+  if (_compilerService.isNull()) {
+    return;
+  }
+  disconnect(_compilerService, nullptr, this, nullptr);
+  disconnect(this, nullptr, _compilerService, nullptr);
+}
+
+void EditorModel::compilationRevisionAvailable(int revision) {
+  if (revision < _currentRunRevision) {
+    return;
+  }
+  if (_compilerService.isNull()) {
+    qCritical() << "Compilation revision received, but reference of compiler "
+                   "service is null";
+    setIsRunning(false);
+    return;
+  }
+  const auto compilationResult = _compilerService->result();
+  if (compilationResult.isNull()) {
+    qCritical() << "Compiler service has provided a null reference to result.";
+    setIsRunning(false);
+    return;
+  }
+  qDebug() << "Compilation result received" << compilationResult->revision();
+  setIsRunning(false);
+}

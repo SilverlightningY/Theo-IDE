@@ -177,6 +177,7 @@ class EditorModel : public QAbstractListModel {
  protected slots:
   void updateMainTabIndex();
   void updateAllTabNames();
+  void compilationRevisionAvailable(int revision);
 
  private:
   int _mainTabIndex = -1;
@@ -206,6 +207,8 @@ class EditorModel : public QAbstractListModel {
   void removeTemporaryTabIndex(QSharedPointer<TabModel> tab);
   void disconnectFileSystemService();
   void connectFileSystemService();
+  void connectCompilerService();
+  void disconnectCompilerService();
   bool setTextDocumentVariantAt(qsizetype index, const QVariant& data);
   bool setOpenAt(qsizetype index, const QVariant& data);
   CompilationTask createCompilationTaskFromTabContent() const;

@@ -33,6 +33,12 @@ QList<QSharedPointer<QFile>> FileSystemService::filesBeingRead() const {
 }
 
 void FileSystemService::readFile(QSharedPointer<QFile> file) {
+  QFutureWatcher<void>* watcher = new QFutureWatcher<void>(this);
+  const std::function<void(void)> deleteWatcher = [watcher]() -> void {
+    qInfo() << "File reading completed";
+    watcher->deleteLater();
+  };
+  connect(watcher, &QFutureWatcher<void>::finished, deleteWatcher);
   QFuture future =
       readFileAsync(file)
           .then([this, file](const QString& content) -> void {
@@ -58,11 +64,6 @@ void FileSystemService::readFile(QSharedPointer<QFile> file) {
           })
           .onCanceled(
               [this, file]() -> void { removeFileFromBeingRead(file); });
-  QFutureWatcher<void>* watcher = new QFutureWatcher<void>(this);
-  connect(watcher, &QFutureWatcher<void>::finished, [watcher]() -> void {
-    qInfo() << "File read finished";
-    watcher->deleteLater();
-  });
   watcher->setFuture(future);
   addFileToBeingRead(file);
 }

@@ -2,9 +2,12 @@
 #define _THEOIDE_MODELS_COMPILERSERVICE_
 
 #include <qcontainerfwd.h>
+#include <qfuture.h>
 #include <qmap.h>
+#include <qmutex.h>
 #include <qobject.h>
 #include <qqmlintegration.h>
+#include <qscopedpointer.h>
 #include <qsharedpointer.h>
 #include <qtmetamacros.h>
 
@@ -12,10 +15,10 @@
 
 class CompilationTask {
  public:
-  CompilationTask(int revision, QMap<QString, QString> content,
-                  QString mainTabName)
+  CompilationTask(const int revision, const QMap<QString, QString> content,
+                  const QString& mainTabName)
       : _revision(revision), _content(content), _mainTabName(mainTabName) {}
-  int revision() const { return _revision; }
+  const int revision() const { return _revision; }
   QMap<QString, QString> content() const { return _content; }
   QString mainTabName() const { return _mainTabName; }
 
@@ -25,23 +28,55 @@ class CompilationTask {
   QMap<QString, QString> _content;
 };
 
+class CompilationResult {
+ public:
+  CompilationResult(const int revision, const Theo::CodegenResult& result)
+      : _revision(revision), _result(result) {}
+  const int revision() const { return _revision; }
+  Theo::CodegenResult result() const { return _result; }
+
+ private:
+  int _revision;
+  Theo::CodegenResult _result;
+};
+
+using AsyncResult = QFuture<QSharedPointer<Theo::CodegenResult>>;
+
 class CompilerService : public QObject {
   Q_OBJECT
-  Q_PROPERTY(QSharedPointer<Theo::CodegenResult> result READ result NOTIFY
-                 resultChanged)
+  Q_PROPERTY(
+      QSharedPointer<CompilationResult> result READ result NOTIFY resultChanged)
+  Q_PROPERTY(QSharedPointer<CompilationResult> lastSuccessfulResult READ
+                 lastSuccessfulResult NOTIFY lastSuccessfulResultChanged)
   QML_ELEMENT
  public:
   CompilerService(QObject* parent = nullptr);
   ~CompilerService();
-  QSharedPointer<Theo::CodegenResult> result() const;
+  QSharedPointer<CompilationResult> result() const;
+  QSharedPointer<CompilationResult> lastSuccessfulResult() const;
   void compile(CompilationTask task);
 
+ public slots:
+  void reset();
+
  signals:
-  void compilationFinished(int revision);
+  void atLeastRevisionAvailable(int revision);
   void resultChanged();
+  void resetTriggered();
+  void lastSuccessfulResultChanged();
+
+ protected slots:
+  void setResult(QSharedPointer<CompilationResult> result);
+  void setLastSuccessfulResult(QSharedPointer<CompilationResult> result);
 
  private:
-  void setResult(QSharedPointer<Theo::CodegenResult> result);
+  mutable QMutex _resultMutex;
+  QSharedPointer<CompilationResult> _result;
+  QSharedPointer<CompilationResult> _lastSuccessfulResult;
+  QFuture<Theo::CodegenResult> compileAsync(const CompilationTask& task);
+  std::map<std::string, std::string> convertContentToStdMap(
+      const QMap<QString, QString>& map);
+  bool checkRevisionAlreadyCompiled(int revision);
 };
 
 #endif
