@@ -1,8 +1,7 @@
 #include "dialogservice.hpp"
 
-#include <qcontainerfwd.h>
-
 #include "dialogbutton.hpp"
+#include "gen.hpp"
 #include "messagedialogdto.hpp"
 
 DialogService::DialogService(QObject* parent) : QObject(parent) {}
@@ -108,6 +107,27 @@ void DialogService::addNoMainScriptSelected() {
   const QString informativeText = tr("Please select a main script");
   auto dto = QSharedPointer<MessageDialogDTO>(
       new MessageDialogDTO(title, text, std::nullopt, informativeText));
+  dto->setButton(DialogButton::Ok);
+  add(dto);
+}
+
+void DialogService::addCompilationFailed(const Theo::CodegenResult& result) {
+  const QString title = tr("Compilation failed");
+  const QString text =
+      tr("The compilation process failed because of syntactic errors in the "
+         "source.");
+  const QString informativeText = tr("Please check your input carefully.");
+  QString detailedText;
+  for (auto error : result.errors) {
+    const QString line = QString("[%1] in '%2', line %3 '%4'\n")
+                             .arg(static_cast<int>(error.t))
+                             .arg(QString::fromStdString(error.file))
+                             .arg(error.line)
+                             .arg(QString::fromStdString(error.message));
+    detailedText.append(line);
+  }
+  auto dto = QSharedPointer<MessageDialogDTO>(
+      new MessageDialogDTO(title, text, detailedText, informativeText));
   dto->setButton(DialogButton::Ok);
   add(dto);
 }

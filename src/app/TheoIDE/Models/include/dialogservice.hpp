@@ -10,6 +10,7 @@
 
 #include <functional>
 
+#include "gen.hpp"
 #include "messagedialogdto.hpp"
 
 #if defined(Q_OS_ANDROID) || defined(Q_OS_LINUX) || defined(Q_OS_MACOS) || \
@@ -33,6 +34,7 @@ class DialogService : public QObject {
   void addNoScriptToCompile();
   void addMainScriptIsEmpty();
   void addNoMainScriptSelected();
+  void addCompilationFailed(const Theo::CodegenResult& result);
 
   std::optional<QSharedPointer<MessageDialogDTO>> remove();
   bool isEmpty() const;

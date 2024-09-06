@@ -29,6 +29,7 @@
 #include "compilerservice.hpp"
 #include "dialogservice.hpp"
 #include "filesystemservice.hpp"
+#include "gen.hpp"
 
 EditorModel::EditorModel(QObject* parent) : QAbstractListModel(parent) {
   connect(this, &QAbstractListModel::rowsInserted, this,
@@ -628,5 +629,16 @@ void EditorModel::compilationRevisionAvailable(int revision) {
     return;
   }
   qDebug() << "Compilation result received" << compilationResult->revision();
+  const Theo::CodegenResult result = compilationResult->result();
+  if (!result.generated_correctly) {
+    setIsRunning(false);
+    if (_dialogService.isNull()) {
+      qCritical() << "Tried to inform the user that the compilation failed, "
+                     "but the dialog service is null";
+      return;
+    }
+    _dialogService->addCompilationFailed(result);
+    return;
+  }
   setIsRunning(false);
 }
