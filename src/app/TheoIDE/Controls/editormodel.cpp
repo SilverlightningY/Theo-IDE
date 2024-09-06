@@ -376,6 +376,7 @@ void EditorModel::closeTabAt(qsizetype index) {
     removeTab();
     return;
   }
+#ifdef THEOIDE_MESSAGE_DIALOG_SUPPORTED
   if (_dialogService.isNull()) {
     qCritical() << "Tried to close a modified tab, but the dialog service is "
                    "null. Action aborted.";
@@ -387,6 +388,9 @@ void EditorModel::closeTabAt(qsizetype index) {
     removeTab();
   };
   _dialogService->addUnsavedChangesInFile(tabModel->name(), saveTab, removeTab);
+#else
+  removeTab();
+#endif  // THEOIDE_MESSAGEDIALOG_SUPPORTED
 }
 
 TabModelOptional EditorModel::tabAt(qsizetype index) const {
@@ -475,6 +479,7 @@ void EditorModel::updateTabNameAt(qsizetype index) {
 
 void EditorModel::displayFileReadFailure(QSharedPointer<QFile> file,
                                          const FileError& error) {
+#ifdef THEOIDE_MESSAGE_DIALOG_SUPPORTED
   if (_dialogService.isNull()) {
     qCritical() << "An error occured but the dialog service was null:"
                 << error.what();
@@ -507,6 +512,9 @@ void EditorModel::displayFileReadFailure(QSharedPointer<QFile> file,
     _dialogService->addFileDoesNotExist(fileDoesNotExistError->fileName());
     return;
   }
+#else
+  qWarning() << "An error occured:" << error.what();
+#endif
 }
 
 void EditorModel::updateMainTabIndex() {

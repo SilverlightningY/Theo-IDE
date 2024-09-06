@@ -91,7 +91,6 @@ void MessageDialogModel::setMessageDialogDTO(
     emit detailedTextChanged();
     emit informativeTextChanged();
     emit dialogButtonsChanged();
-    emit hasMessageToShow();
   }
 }
 
@@ -120,6 +119,7 @@ void MessageDialogModel::showMessage() {
     return;
   }
   setMessageDialogDTO(messageOptional.value());
+  emit hasMessageToShow();
 }
 
 void MessageDialogModel::disconnectDialogService() {
