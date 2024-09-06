@@ -1,6 +1,7 @@
 #include "filesystemservice.hpp"
 
 #include <qcontainerfwd.h>
+#include <qdebug.h>
 #include <qdir.h>
 #include <qfiledevice.h>
 #include <qfuture.h>
@@ -32,22 +33,34 @@ QList<QSharedPointer<QFile>> FileSystemService::filesBeingRead() const {
 }
 
 void FileSystemService::readFile(QSharedPointer<QFile> file) {
-  QFuture future = readFileAsync(file)
-                       .then([this, file](const QString& content) -> void {
-                         removeFileFromBeingRead(file);
-                         emit fileRead(file, content);
-                       })
-                       .onFailed([this, file](const FileError& error) -> void {
-                         removeFileFromBeingRead(file);
-                         emit fileReadFailed(file, error);
-                       })
-                       .onCanceled([this, file]() -> void {
-                         removeFileFromBeingRead(file);
-                         emit fileReadCanceled(file);
-                       });
+  QFuture future =
+      readFileAsync(file)
+          .then([this, file](const QString& content) -> void {
+            removeFileFromBeingRead(file);
+            emit fileRead(file, content);
+          })
+          .onFailed(
+              [this, file](const MaxReadFileSizeExceededError& error) -> void {
+                removeFileFromBeingRead(file);
+                emit fileReadFailedMaxReadSizeExceeded(file, error);
+              })
+          .onFailed([this, file](const FileReadError& error) -> void {
+            removeFileFromBeingRead(file);
+            emit fileReadFailedFileReadPermission(file, error);
+          })
+          .onFailed([this, file](const FileDoesNotExistError& error) -> void {
+            removeFileFromBeingRead(file);
+            emit fileReadFailedFileDoesNotExist(file, error);
+          })
+          .onFailed([this, file](const FileError& error) -> void {
+            removeFileFromBeingRead(file);
+            emit fileReadFailed(file, error);
+          })
+          .onCanceled(
+              [this, file]() -> void { removeFileFromBeingRead(file); });
   QFutureWatcher<void>* watcher = new QFutureWatcher<void>(this);
   connect(watcher, &QFutureWatcher<void>::finished, [watcher]() -> void {
-    qDebug() << "File read finished";
+    qInfo() << "File read finished";
     watcher->deleteLater();
   });
   watcher->setFuture(future);

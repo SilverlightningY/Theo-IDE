@@ -159,6 +159,12 @@ class EditorModel : public QAbstractListModel {
   void setFileSystemService(FileSystemService* fileSystemService);
   void setMainTabIndex(int index);
   void setCurrentTabIndex(int index);
+  void displayFileReadMaxReadFileSizeExceededFailure(
+      QSharedPointer<QFile> file, const MaxReadFileSizeExceededError& error);
+  void displayFileReadFileReadPermissionFailure(QSharedPointer<QFile> file,
+                                                const FileReadError& error);
+  void displayFileReadFileDoesNotExistFailure(
+      QSharedPointer<QFile> file, const FileDoesNotExistError& error);
 
  signals:
   void currentTabIndexChanged(int index);

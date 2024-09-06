@@ -51,5 +51,4 @@ ApplicationWindow {
             }
         }
     }
-    Component.onCompleted: console.log(compilerService)
 }

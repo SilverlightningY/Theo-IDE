@@ -198,6 +198,15 @@ void EditorModel::connectFileSystemService() {
             &EditorModel::createTabFromFile);
     connect(_fileSystemService, &FileSystemService::fileReadFailed, this,
             &EditorModel::displayFileReadFailure);
+    connect(_fileSystemService,
+            &FileSystemService::fileReadFailedFileReadPermission, this,
+            &EditorModel::displayFileReadFileReadPermissionFailure);
+    connect(_fileSystemService,
+            &FileSystemService::fileReadFailedFileDoesNotExist, this,
+            &EditorModel::displayFileReadFileDoesNotExistFailure);
+    connect(_fileSystemService,
+            &FileSystemService::fileReadFailedMaxReadSizeExceeded, this,
+            &EditorModel::displayFileReadMaxReadFileSizeExceededFailure);
   }
 }
 
@@ -333,6 +342,9 @@ CompilationTask EditorModel::createCompilationTaskFromTabContent() const {
         throw MainTabInvalidStateError();
       }
       continue;
+    }
+    if (isMainTabIndex(tabIndex)) {
+      mainTabName = tab->name();
     }
     auto tabTextDocument = tab->textDocument();
     if (tabTextDocument.isNull()) {
@@ -475,6 +487,40 @@ void EditorModel::updateTabNameAt(qsizetype index) {
   tab->setName(newTabName);
   const QModelIndex modelIndex = createIndex(index, 0);
   emit dataChanged(modelIndex, modelIndex);
+}
+
+const QString ERROR_WHILE_DIALOG_SERVICE_NULL_MESSAGE =
+    "An error occured, but the dialog service is null.";
+
+void EditorModel::displayFileReadFileReadPermissionFailure(
+    QSharedPointer<QFile> file, const FileReadError& error) {
+  Q_UNUSED(file);
+  if (_dialogService.isNull()) {
+    qCritical() << ERROR_WHILE_DIALOG_SERVICE_NULL_MESSAGE << error.what();
+    return;
+  }
+  _dialogService->addReadPermissionDenied(error.fileName());
+}
+
+void EditorModel::displayFileReadFileDoesNotExistFailure(
+    QSharedPointer<QFile> file, const FileDoesNotExistError& error) {
+  Q_UNUSED(file)
+  if (_dialogService.isNull()) {
+    qCritical() << ERROR_WHILE_DIALOG_SERVICE_NULL_MESSAGE << error.what();
+    return;
+  }
+  _dialogService->addFileDoesNotExist(error.fileName());
+}
+
+void EditorModel::displayFileReadMaxReadFileSizeExceededFailure(
+    QSharedPointer<QFile> file, const MaxReadFileSizeExceededError& error) {
+  Q_UNUSED(file)
+  if (_dialogService.isNull()) {
+    qCritical() << ERROR_WHILE_DIALOG_SERVICE_NULL_MESSAGE << error.what();
+    return;
+  }
+  _dialogService->addMaxReadFileSizeExceeded(error.fileName(),
+                                             error.maxFileSizeBytes());
 }
 
 void EditorModel::displayFileReadFailure(QSharedPointer<QFile> file,

@@ -74,14 +74,14 @@ Item {
             padding: 16
 
             LabeledControl {
-                text: qsTr("Auto Steps per Second")
+                text: qsTr("Auto Step Speed")
                 width: parent.contentWidth
                 spacing: 0
                 RowLayout {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     Label {
-                        text: "0.1"
+                        text: qsTr("Slow")
                     }
                     Slider {
                         Layout.fillWidth: true
@@ -90,7 +90,7 @@ Item {
                         value: 1
                     }
                     Label {
-                        text: "2.0"
+                        text: qsTr("Fast")
                     }
                 }
             }
