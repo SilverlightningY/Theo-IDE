@@ -104,7 +104,7 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     textRole: "tabName"
-                    enabled: !root.model.isRunning
+                    enabled: !root.model.isRunning && count > 0
 
                     function updateMainTabIndex(index: int): void {
                         root.model.mainTabIndex = index;

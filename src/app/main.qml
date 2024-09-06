@@ -10,6 +10,11 @@ ApplicationWindow {
     height: ApplicationSettings.windowHeight
     visible: true
 
+    Component.onDestruction: {
+        ApplicationSettings.windowWidth = width;
+        ApplicationSettings.windowHeight = height;
+    }
+
     palette {
         buttonText: ApplicationSettings.foreground
         text: ApplicationSettings.foreground
