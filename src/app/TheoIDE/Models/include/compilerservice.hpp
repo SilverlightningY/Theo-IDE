@@ -12,12 +12,15 @@
 
 class CompilationTask {
  public:
-  CompilationTask(int revision, QMap<QString, QString> content)
-      : _revision(revision), _content(content) {}
+  CompilationTask(int revision, QMap<QString, QString> content,
+                  QString mainTabName)
+      : _revision(revision), _content(content), _mainTabName(mainTabName) {}
   int revision() const { return _revision; }
   QMap<QString, QString> content() const { return _content; }
+  QString mainTabName() const { return _mainTabName; }
 
  private:
+  QString _mainTabName;
   int _revision;
   QMap<QString, QString> _content;
 };

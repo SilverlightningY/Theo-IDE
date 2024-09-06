@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <functional>
 #include <optional>
+#include <ranges>
 
 #include "compilerservice.hpp"
 #include "dialogservice.hpp"
@@ -262,31 +263,95 @@ void EditorModel::setIsRunning(bool isRunning) {
 }
 
 void EditorModel::runScript() {
+  setIsRunning(true);
+  const bool compilationTaskPushed = tryPushCompilationTask();
+  if (!compilationTaskPushed) {
+    setIsRunning(false);
+  }
+}
+
+bool EditorModel::compilationPreconditionsFulfilled() const {
   if (_compilerService.isNull()) {
     qCritical() << "Unable to compile script because compiler service is null";
-    return;
+    return false;
   }
-  setIsRunning(true);
-  const CompilationTask task = createCompilationTaskFromTabContent();
-  _currentRunRevision = task.revision();
-  _compilerService->compile(task);
+  if (_tabs.isEmpty()) {
+    if (_dialogService) {
+      _dialogService->addNoScriptToCompile();
+      return false;
+    }
+    qWarning() << "Tried to inform the user that there is no open tab for "
+                  "compilation, but the message service is null";
+    return false;
+  }
+  return true;
+}
+
+bool EditorModel::tryPushCompilationTask() {
+  if (!compilationPreconditionsFulfilled()) {
+    return false;
+  }
+  try {
+    const CompilationTask task = createCompilationTaskFromTabContent();
+    _currentRunRevision = task.revision();
+    _compilerService->compile(task);
+  } catch (const NoMainTabError& error) {
+    if (_dialogService) {
+      _dialogService->addNoMainScriptSelected();
+      return false;
+    }
+    qWarning() << "Tried to inform the user that no main script was selected, "
+                  "but the message service is null";
+    return false;
+  } catch (const EmptyMainTabError& error) {
+    if (_dialogService) {
+      _dialogService->addMainScriptIsEmpty();
+      return false;
+    }
+    qWarning() << "Tried to inform the user that the main script is empty, but "
+                  "the message service was null";
+    return false;
+  } catch (const MainTabInvalidStateError& error) {
+    qFatal() << "Main tab is in invalid state.";
+    return false;
+  }
+  return true;
+}
+
+bool EditorModel::isMainTabIndex(int index) const {
+  return index == _mainTabIndex;
 }
 
 CompilationTask EditorModel::createCompilationTaskFromTabContent() const {
+  QString mainTabName;
   int revision = 0;
   QMap<QString, QString> content;
-  for (auto tab : _tabs) {
+  for (const int tabIndex : std::views::iota(0, _tabs.size())) {
+    auto tab = _tabs.at(tabIndex);
     if (tab.isNull()) {
+      if (isMainTabIndex(tabIndex)) {
+        throw MainTabInvalidStateError();
+      }
       continue;
     }
     auto tabTextDocument = tab->textDocument();
     if (tabTextDocument.isNull()) {
+      if (isMainTabIndex(tabIndex)) {
+        throw MainTabInvalidStateError();
+      }
       continue;
     }
+    const QString tabContent = tabTextDocument->toPlainText();
+    if (isMainTabIndex(tabIndex) && tabContent.isEmpty()) {
+      throw EmptyMainTabError();
+    }
     revision += tabTextDocument->revision();
-    content.insert(tab->name(), tabTextDocument->toPlainText());
+    content.insert(tab->name(), tabContent);
   }
-  return CompilationTask(revision, content);
+  if (mainTabName.isEmpty()) {
+    throw NoMainTabError();
+  }
+  return CompilationTask(revision, content, mainTabName);
 }
 
 void EditorModel::runScriptInDebugMode() {}

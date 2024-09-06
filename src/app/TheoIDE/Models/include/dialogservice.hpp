@@ -9,7 +9,6 @@
 #include <qtmetamacros.h>
 
 #include <functional>
-#include <optional>
 
 #include "messagedialogdto.hpp"
 
@@ -17,7 +16,7 @@ class DialogService : public QObject {
   Q_OBJECT
   QML_ELEMENT
  public:
-  DialogService();
+  DialogService(QObject* parent = nullptr);
   ~DialogService();
   void addReadPermissionDenied(const QString& fileName);
   void addFileDoesNotExist(const QString& fileName);
@@ -26,6 +25,9 @@ class DialogService : public QObject {
                                std::function<void(void)> onDiscard);
   void addMaxReadFileSizeExceeded(const QString& fileName,
                                   const int maxFileSizeBytes);
+  void addNoScriptToCompile();
+  void addMainScriptIsEmpty();
+  void addNoMainScriptSelected();
 
   std::optional<QSharedPointer<MessageDialogDTO>> remove();
   bool isEmpty() const;

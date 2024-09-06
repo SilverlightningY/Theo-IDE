@@ -20,12 +20,32 @@
 #include <qvariant.h>
 
 #include <optional>
+#include <stdexcept>
 
 #include "compilerservice.hpp"
 #include "dialogservice.hpp"
 #include "filesystemservice.hpp"
 
 using FileOptional = std::optional<QSharedPointer<QFile>>;
+
+class NoMainTabError : public std::runtime_error {
+ public:
+  NoMainTabError() : std::runtime_error("Main tab is unset") {}
+  ~NoMainTabError() {}
+};
+
+class EmptyMainTabError : public std::runtime_error {
+ public:
+  EmptyMainTabError() : std::runtime_error("Main tab is empty") {}
+  ~EmptyMainTabError() {}
+};
+
+class MainTabInvalidStateError : public std::runtime_error {
+ public:
+  MainTabInvalidStateError()
+      : std::runtime_error("Main tab is in invalid state") {}
+  ~MainTabInvalidStateError() {}
+};
 
 class TabModel {
  public:
@@ -185,6 +205,9 @@ class EditorModel : public QAbstractListModel {
   CompilationTask createCompilationTaskFromTabContent() const;
   void setIsRunning(bool isRunning);
   void updateTabNameAt(qsizetype index);
+  bool tryPushCompilationTask();
+  bool compilationPreconditionsFulfilled() const;
+  bool isMainTabIndex(int index) const;
 };
 
 #endif

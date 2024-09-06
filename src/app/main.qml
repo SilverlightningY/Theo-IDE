@@ -47,8 +47,9 @@ ApplicationWindow {
             model: EditorModel {
                 fileSystemService: root.fileSystemService
                 dialogService: root.dialogService
-                compilerService: compilerService
+                compilerService: root.compilerService
             }
         }
     }
+    Component.onCompleted: console.log(compilerService)
 }
