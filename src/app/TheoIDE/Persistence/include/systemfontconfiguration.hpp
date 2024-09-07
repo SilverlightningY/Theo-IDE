@@ -11,13 +11,12 @@ class SystemFontConfiguraton : public QObject {
   Q_OBJECT
   QML_ELEMENT
   QML_SINGLETON
-  Q_PROPERTY(int defaultFontSize READ defaultFontSize NOTIFY
-                 defaultFontSizeChanged FINAL)
-  Q_PROPERTY(int defaultMonospaceFontSize READ defaultMonospaceFontSize NOTIFY
-                 defaultMonospaceFontSizeChanged FINAL)
-  Q_PROPERTY(QFont defaultFont READ defaultFont NOTIFY defaultFontChanged FINAL)
-  Q_PROPERTY(QFont defaultMonospaceFont READ defaultMonospaceFont NOTIFY
-                 defaultMonospaceFontChanged FINAL)
+  Q_PROPERTY(int defaultFontSize READ defaultFontSize CONSTANT FINAL)
+  Q_PROPERTY(
+      int defaultMonospaceFontSize READ defaultMonospaceFontSize CONSTANT FINAL)
+  Q_PROPERTY(QFont defaultFont READ defaultFont CONSTANT FINAL)
+  Q_PROPERTY(
+      QFont defaultMonospaceFont READ defaultMonospaceFont CONSTANT FINAL)
  public:
   SystemFontConfiguraton(QObject* parent = nullptr);
   ~SystemFontConfiguraton();
@@ -25,11 +24,8 @@ class SystemFontConfiguraton : public QObject {
   int defaultFontSize() const;
   QFont defaultMonospaceFont() const;
   int defaultMonospaceFontSize() const;
- signals:
-  void defaultFontSizeChanged();
-  void defaultFontChanged();
-  void defaultMonospaceFontSizeChanged();
-  void defaultMonospaceFontChanged();
+  Q_INVOKABLE
+  qreal calculateSpaceWidthOfFont(const QFont& font) const;
 };
 
 #endif

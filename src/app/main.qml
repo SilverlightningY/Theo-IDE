@@ -6,9 +6,14 @@ import TheoIDE.Controls
 
 ApplicationWindow {
     id: root
-    width: 1000
-    height: 1000
+    width: ApplicationSettings.windowWidth
+    height: ApplicationSettings.windowHeight
     visible: true
+
+    Component.onDestruction: {
+        ApplicationSettings.windowWidth = width;
+        ApplicationSettings.windowHeight = height;
+    }
 
     palette {
         buttonText: ApplicationSettings.foreground
@@ -30,6 +35,7 @@ ApplicationWindow {
         maxFileSizeBytes: ApplicationSettings.maxReadFileSizeBytes
         blockSizeBytes: ApplicationSettings.blockSizeBytes
     }
+    property CompilerService compilerService: CompilerService {}
 
     ApplicationMessageDialog {
         model: MessageDialogModel {
@@ -46,6 +52,7 @@ ApplicationWindow {
             model: EditorModel {
                 fileSystemService: root.fileSystemService
                 dialogService: root.dialogService
+                compilerService: root.compilerService
             }
         }
     }

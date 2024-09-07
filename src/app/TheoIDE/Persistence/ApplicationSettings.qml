@@ -6,6 +6,8 @@ import QtQuick.Controls.Material
 import TheoIDE.Persistence
 
 Item {
+    id: root
+
     Settings {
         id: themeSettings
         category: "Theme"
@@ -48,14 +50,34 @@ Item {
     property alias uiFontSize: fontSettings.uiFontSize
     property alias editorFontSize: fontSettings.editorFontSize
     property alias editorFontFamily: fontSettings.editorFontFamily
+    readonly property font editorFont: ({
+            family: editorFontFamily,
+            pointSize: editorFontSize
+        })
 
     Settings {
         id: generalSettings
         category: "General"
         property int maxReadFileSizeBytes: 2 * 1024 * 1024
         property int blockSizeBytes: 1024
+        property int tabStopDistanceInSpaces: 3
+        property bool expandTabsToSpaces: false
     }
 
     property alias maxReadFileSizeBytes: generalSettings.maxReadFileSizeBytes
     property alias blockSizeBytes: generalSettings.blockSizeBytes
+    property alias tabStopDistanceInSpaces: generalSettings.tabStopDistanceInSpaces
+    property alias expandTabsToSpaces: generalSettings.expandTabsToSpaces
+
+    readonly property int tabStopDistance: SystemFontConfiguraton.calculateSpaceWidthOfFont(editorFont) * tabStopDistanceInSpaces
+
+    Settings {
+        id: windowSettings
+        category: "Window"
+        property int width: 1000
+        property int height: 1000
+    }
+
+    property alias windowWidth: windowSettings.width
+    property alias windowHeight: windowSettings.height
 }

@@ -15,7 +15,7 @@
 class FileError : public std::exception {
  public:
   FileError(const QString &fileName) : _fileName(fileName) {}
-  const QString &fileName() const noexcept { return _fileName; }
+  virtual const QString &fileName() const noexcept { return _fileName; }
   virtual const char *what() const noexcept override {
     return _message.toLocal8Bit().data();
   }
@@ -110,6 +110,12 @@ class FileSystemService : public QObject {
   void blockSizeBytesChanged(int blockSizeBytes);
   void fileRead(QSharedPointer<QFile> file, QString content);
   void fileReadFailed(QSharedPointer<QFile> file, const FileError &error);
+  void fileReadFailedMaxReadSizeExceeded(
+      QSharedPointer<QFile> file, const MaxReadFileSizeExceededError &error);
+  void fileReadFailedFileDoesNotExist(QSharedPointer<QFile> file,
+                                      const FileDoesNotExistError &error);
+  void fileReadFailedFileReadPermission(QSharedPointer<QFile> file,
+                                        const FileReadError &error);
   void fileReadCanceled(QSharedPointer<QFile> file);
   void filesBeingReadChanged(int numberOfFilesBeingRead);
 

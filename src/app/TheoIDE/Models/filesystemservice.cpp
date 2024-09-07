@@ -1,14 +1,18 @@
+#include "filesystemservice.hpp"
+
 #include <qcontainerfwd.h>
+#include <qdebug.h>
 #include <qdir.h>
 #include <qfiledevice.h>
 #include <qfuture.h>
 #include <qfuturewatcher.h>
 #include <qlist.h>
 #include <qmutex.h>
+#include <qpromise.h>
 #include <qsharedpointer.h>
 #include <qtconcurrentrun.h>
 
-#include "filesystemservice.hpp"
+#include <exception>
 
 const int DEFAULT_MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024;
 const int DEFAULT_BLOCK_SIZE_BYTES = 1024;
@@ -29,24 +33,37 @@ QList<QSharedPointer<QFile>> FileSystemService::filesBeingRead() const {
 }
 
 void FileSystemService::readFile(QSharedPointer<QFile> file) {
-  QFuture future = readFileAsync(file)
-                       .then([this, file](const QString& content) -> void {
-                         removeFileFromBeingRead(file);
-                         emit fileRead(file, content);
-                       })
-                       .onFailed([this, file](const FileError& error) -> void {
-                         removeFileFromBeingRead(file);
-                         emit fileReadFailed(file, error);
-                       })
-                       .onCanceled([this, file]() -> void {
-                         removeFileFromBeingRead(file);
-                         emit fileReadCanceled(file);
-                       });
   QFutureWatcher<void>* watcher = new QFutureWatcher<void>(this);
-  connect(watcher, &QFutureWatcher<void>::finished, [watcher]() -> void {
-    qDebug() << "File read finished";
+  const std::function<void(void)> deleteWatcher = [watcher]() -> void {
+    qInfo() << "File reading completed";
     watcher->deleteLater();
-  });
+  };
+  connect(watcher, &QFutureWatcher<void>::finished, deleteWatcher);
+  QFuture future =
+      readFileAsync(file)
+          .then([this, file](const QString& content) -> void {
+            removeFileFromBeingRead(file);
+            emit fileRead(file, content);
+          })
+          .onFailed(
+              [this, file](const MaxReadFileSizeExceededError& error) -> void {
+                removeFileFromBeingRead(file);
+                emit fileReadFailedMaxReadSizeExceeded(file, error);
+              })
+          .onFailed([this, file](const FileReadError& error) -> void {
+            removeFileFromBeingRead(file);
+            emit fileReadFailedFileReadPermission(file, error);
+          })
+          .onFailed([this, file](const FileDoesNotExistError& error) -> void {
+            removeFileFromBeingRead(file);
+            emit fileReadFailedFileDoesNotExist(file, error);
+          })
+          .onFailed([this, file](const FileError& error) -> void {
+            removeFileFromBeingRead(file);
+            emit fileReadFailed(file, error);
+          })
+          .onCanceled(
+              [this, file]() -> void { removeFileFromBeingRead(file); });
   watcher->setFuture(future);
   addFileToBeingRead(file);
 }
@@ -107,7 +124,15 @@ QString FileSystemService::readFileSync(QSharedPointer<QFile> file) const {
 
 QFuture<QString> FileSystemService::readFileAsync(
     QSharedPointer<QFile> file) const {
-  return QtConcurrent::run(&FileSystemService::readFileSync, this, file);
+  const std::function<void(QPromise<QString>&)> read =
+      [this, file](QPromise<QString>& promise) -> void {
+    try {
+      promise.addResult(this->readFileSync(file));
+    } catch (...) {
+      promise.setException(std::current_exception());
+    }
+  };
+  return QtConcurrent::run(read);
 }
 
 void FileSystemService::addFileToBeingRead(QSharedPointer<QFile> file) {

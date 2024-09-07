@@ -1,182 +1,132 @@
 import QtQuick
 import QtQuick.Controls.Material
 import QtQuick.Layouts
+import TheoIDE.Controls
 import TheoIDE.Persistence
-import Qt.labs.qmlmodels
 
 Item {
     id: root
 
     property bool autoStepEnabled: false
-    property alias implicitWidth: toolBar.implicitWidth
+    property alias implicitWidth: debugControls.implicitWidth
+    required property EditorModel model
 
-    Action {
-        id: stepNextAction
-        text: qsTr("Step Next Breakpoint")
-        icon.name: "skip_next"
-    }
-
-    Action {
-        id: stepAction
-        text: qsTr("Step")
-        icon.name: "step"
-    }
-
-    Action {
-        id: restartAction
-        text: qsTr("Restart")
-        icon.name: "replay"
-    }
-
-    Action {
-        id: stopAction
-        text: qsTr("Stop")
-        icon.name: "stop"
-    }
-
-    Action {
-        id: enableAutoStepAction
-        text: qsTr("Enable Auto Step")
-        icon.name: "autoplay"
-        onTriggered: root.autoStepEnabled = true
-    }
-
-    Action {
-        id: disableAutoStepAction
-        text: qsTr("Disable Auto Step")
-        icon.name: "autopause"
-        onTriggered: root.autoStepEnabled = false
-    }
-
-    ToolBar {
-        id: toolBar
-        anchors.top: parent.top
+    Column {
+        id: debugControlsContainer
         anchors.left: parent.left
         anchors.right: parent.right
-        leftPadding: 8
-        rightPadding: 8
-        background: Rectangle {
-            height: 48
-            color: ApplicationSettings.background
+        anchors.top: parent.top
+        spacing: 0
+
+        Flickable {
+            id: debugControlsFlickable
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: debugControls.height
+            contentWidth: debugControls.width
+            contentHeight: debugControls.height
+            clip: true
+
+            DebugControls {
+                id: debugControls
+                leftPadding: 8
+                rightPadding: 8
+                width: implicitWidth
+                height: implicitHeight
+            }
         }
 
-        RowLayout {
-            spacing: 0
-
-            ToolButton {
-                action: stepNextAction
-                display: AbstractButton.IconOnly
-                icon.color: ApplicationSettings.foreground
-            }
-            ToolButton {
-                action: stepAction
-                display: AbstractButton.IconOnly
-                icon.color: ApplicationSettings.foreground
-            }
-            ToolButton {
-                action: root.autoStepEnabled ? disableAutoStepAction : enableAutoStepAction
-                display: AbstractButton.IconOnly
-                icon.color: ApplicationSettings.foreground
-            }
-            ToolButton {
-                action: restartAction
-                display: AbstractButton.IconOnly
-                icon.color: ApplicationSettings.foreground
-            }
-            ToolButton {
-                action: stopAction
-                display: AbstractButton.IconOnly
-                icon.color: ApplicationSettings.foreground
-            }
+        Rectangle {
+            id: toolBarSeparator
+            anchors.left: parent.left
+            anchors.right: parent.right
+            color: ApplicationSettings.primary
+            height: 1
         }
     }
 
     Rectangle {
-        id: toolBarSeparator
+        id: mainContentBackground
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.top: toolBar.bottom
+        anchors.top: debugControlsContainer.bottom
+        anchors.bottom: parent.bottom
         color: ApplicationSettings.primary
-        height: 1
     }
 
-    Control {
-        id: variableStateTableContainer
-        anchors.top: toolBarSeparator.bottom
+    ScrollView {
+        id: contentScrollView
         anchors.left: parent.left
         anchors.right: parent.right
+        anchors.top: debugControlsContainer.bottom
         anchors.bottom: parent.bottom
-        padding: 10
+        clip: true
+        contentWidth: availableWidth
+        contentHeight: mainContent.implicitHeight
+        z: 1
 
-        background: Rectangle {
-            color: ApplicationSettings.primary
-        }
+        Column {
+            id: mainContent
+            anchors.left: parent.left
+            anchors.right: parent.right
+            spacing: 16
+            readonly property int contentWidth: width - leftPadding - rightPadding
+            padding: 16
 
-        contentItem: TableView {
-            id: variableStateTable
-
-            columnSpacing: 1
-            rowSpacing: 1
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
-
-            model: TableModel {
-                TableModelColumn {
-                    display: "variable"
-                    decoration: qsTr("Variable")
-                }
-                TableModelColumn {
-                    display: "value"
-                    decoration: qsTr("Value")
-                }
-                rows: [
-                    {
-                        "variable": "x0",
-                        "value": "1"
-                    },
-                    {
-                        "variable": "x1",
-                        "value": "5"
-                    },
-                    {
-                        "variable": "very long variable name",
-                        "value": "83993323"
+            LabeledControl {
+                text: qsTr("Auto Step Speed")
+                width: parent.contentWidth
+                spacing: 0
+                RowLayout {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    Label {
+                        text: qsTr("Slow")
                     }
-                ]
+                    Slider {
+                        Layout.fillWidth: true
+                        from: 0.1
+                        to: 2
+                        value: 1
+                    }
+                    Label {
+                        text: qsTr("Fast")
+                    }
+                }
             }
 
-            columnWidthProvider: column => {
-                if (!isColumnLoaded(column)) {
-                    return implicitColumnWidth(column);
+            LabeledControl {
+                text: qsTr("Main Script")
+                width: parent.contentWidth
+                ComboBox {
+                    id: mainTabComboBox
+                    model: root.model
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    textRole: "tabName"
+                    enabled: !root.model.isRunning && count > 0
+
+                    function updateMainTabIndex(index: int): void {
+                        root.model.mainTabIndex = index;
+                    }
+                    function updateCurrentIndex(index: int): void {
+                        currentIndex = root.model.mainTabIndex;
+                    }
+                    Component.onCompleted: {
+                        currentIndex = root.model.mainTabIndex;
+                        activated.connect(updateMainTabIndex);
+                        root.model.mainTabIndexChanged.connect(updateCurrentIndex);
+                    }
                 }
-                if (column === 0) {
-                    return Math.max(implicitColumnWidth(column), variableStateTable.width / 1.5);
-                }
-                return Math.max(implicitColumnWidth(column), variableStateTable.width / 3);
             }
 
-            delegate: Rectangle {
-                required property string display
-
-                color: ApplicationSettings.background
-                implicitHeight: tableCellText.implicitHeight
-                implicitWidth: tableCellText.implicitWidth
-
-                Text {
-                    id: tableCellText
-                    text: parent.display
-                    anchors.fill: parent
-                    rightPadding: ApplicationSettings.editorFontSize
-                    leftPadding: rightPadding
-                    topPadding: ApplicationSettings.editorFontSize / 2
-                    bottomPadding: topPadding
-                    horizontalAlignment: Text.AlignRight
-                    verticalAlignment: Text.AlignBottom
-                    font {
-                        family: ApplicationSettings.editorFontFamily
-                        pointSize: ApplicationSettings.editorFontSize
-                    }
-                    color: ApplicationSettings.foreground
+            LabeledControl {
+                width: parent.contentWidth
+                text: qsTr("Output")
+                ResultTable {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: implicitHeight
                 }
             }
         }

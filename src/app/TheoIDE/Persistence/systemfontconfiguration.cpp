@@ -1,6 +1,9 @@
-#include <qfontdatabase.h>
-
 #include "include/systemfontconfiguration.hpp"
+
+#include <qdebug.h>
+#include <qfontdatabase.h>
+#include <qfontmetrics.h>
+#include <qwindowdefs.h>
 
 SystemFontConfiguraton::SystemFontConfiguraton(QObject* parent)
     : QObject(parent) {}
@@ -22,4 +25,10 @@ QFont SystemFontConfiguraton::defaultMonospaceFont() const {
 
 int SystemFontConfiguraton::defaultMonospaceFontSize() const {
   return defaultMonospaceFont().pointSize();
+}
+
+qreal SystemFontConfiguraton::calculateSpaceWidthOfFont(
+    const QFont& font) const {
+  const QFontMetrics fontMetrics(font);
+  return fontMetrics.horizontalAdvance(' ');
 }
