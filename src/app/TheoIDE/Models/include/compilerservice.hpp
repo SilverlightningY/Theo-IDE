@@ -1,15 +1,13 @@
 #ifndef _THEOIDE_MODELS_COMPILERSERVICE_
 #define _THEOIDE_MODELS_COMPILERSERVICE_
 
-#include <qcontainerfwd.h>
-#include <qfuture.h>
-#include <qmap.h>
-#include <qmutex.h>
-#include <qobject.h>
-#include <qqmlintegration.h>
-#include <qscopedpointer.h>
-#include <qsharedpointer.h>
-#include <qtmetamacros.h>
+#include <QFuture>
+#include <QMap>
+#include <QMutex>
+#include <QObject>
+#include <QSharedPointer>
+#include <QString>
+#include <QtQmlIntegration>
 
 #include "gen.hpp"
 

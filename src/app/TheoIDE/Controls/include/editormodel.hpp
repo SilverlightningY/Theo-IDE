@@ -1,24 +1,19 @@
 #ifndef _THEOIDE_CONTROLS_EDITORMODEL_
 #define _THEOIDE_CONTROLS_EDITORMODEL_
 
-#include <qabstractitemmodel.h>
-#include <qdir.h>
-#include <qhash.h>
-#include <qmap.h>
-#include <qmutex.h>
-#include <qnamespace.h>
-#include <qobject.h>
-#include <qpointer.h>
-#include <qqmlintegration.h>
-#include <qscopedpointer.h>
-#include <qsharedpointer.h>
-#include <qstringview.h>
-#include <qtextdocument.h>
-#include <qtmetamacros.h>
-#include <qtypes.h>
-#include <qurl.h>
-#include <qvariant.h>
-
+#include <QAbstractItemModel>
+#include <QDir>
+#include <QList>
+#include <QMap>
+#include <QMutex>
+#include <QPointer>
+#include <QQuickTextDocument>
+#include <QScopedPointer>
+#include <QSharedPointer>
+#include <QTextDocument>
+#include <QUrl>
+#include <QVariant>
+#include <QtQmlIntegration>
 #include <optional>
 #include <stdexcept>
 

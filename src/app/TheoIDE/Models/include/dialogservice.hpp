@@ -1,13 +1,11 @@
 #ifndef _THEOIDE_MODELS_DIALOGSERVICE_
 #define _THEOIDE_MODELS_DIALOGSERVICE_
 
-#include <qlist.h>
-#include <qobject.h>
-#include <qobjectdefs.h>
-#include <qqmlintegration.h>
-#include <qsharedpointer.h>
-#include <qtmetamacros.h>
-
+#include <QList>
+#include <QObject>
+#include <QSharedPointer>
+#include <QString>
+#include <QtQmlIntegration>
 #include <functional>
 
 #include "gen.hpp"

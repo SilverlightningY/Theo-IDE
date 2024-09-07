@@ -1,10 +1,8 @@
 #ifndef _THEOIDE_MODELS_DIALOGBUTTON_
 #define _THEOIDE_MODELS_DIALOGBUTTON_
 
-#include <qobject.h>
-#include <qobjectdefs.h>
-#include <qqmlintegration.h>
-#include <qtmetamacros.h>
+#include <QObject>
+#include <QtQmlIntegration>
 
 class DialogButtonWrapper : public QObject {
   Q_OBJECT

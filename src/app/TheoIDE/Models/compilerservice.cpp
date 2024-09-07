@@ -1,18 +1,10 @@
-#include "compilerservice.hpp"
-
-#include <qdebug.h>
-#include <qfuturewatcher.h>
-#include <qmutex.h>
-#include <qpromise.h>
-#include <qscopedpointer.h>
-#include <qsharedpointer.h>
-#include <qtconcurrentrun.h>
-
+#include <QtConcurrentRun>
 #include <functional>
 #include <map>
 #include <string>
 
 #include "compiler.hpp"
+#include "compilerservice.hpp"
 #include "gen.hpp"
 #include "scan.hpp"
 

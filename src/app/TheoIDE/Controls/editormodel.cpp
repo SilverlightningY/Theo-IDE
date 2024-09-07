@@ -1,26 +1,3 @@
-#include "editormodel.hpp"
-
-#include <qabstractitemmodel.h>
-#include <qalgorithms.h>
-#include <qcontainerfwd.h>
-#include <qdir.h>
-#include <qfileinfo.h>
-#include <qfuturewatcher.h>
-#include <qhash.h>
-#include <qlogging.h>
-#include <qmutex.h>
-#include <qnamespace.h>
-#include <qpointer.h>
-#include <qquicktextdocument.h>
-#include <qscopedpointer.h>
-#include <qsharedpointer.h>
-#include <qstringview.h>
-#include <qtpreprocessorsupport.h>
-#include <qttranslation.h>
-#include <qtypes.h>
-#include <qurl.h>
-#include <qvariant.h>
-
 #include <algorithm>
 #include <functional>
 #include <optional>
@@ -28,6 +5,7 @@
 
 #include "compilerservice.hpp"
 #include "dialogservice.hpp"
+#include "editormodel.hpp"
 #include "filesystemservice.hpp"
 #include "gen.hpp"
 

@@ -1,9 +1,12 @@
 #ifndef _THEOIDE_CONTROLS_MESSAGEDIALOGMODEL_
 #define _THEOIDE_CONTROLS_MESSAGEDIALOGMODEL_
 
-#include <qjsvalue.h>
-#include <qpointer.h>
-#include <qtmetamacros.h>
+#include <QObject>
+#include <QPointer>
+#include <QSharedPointer>
+#include <QString>
+#include <QVariantList>
+#include <QtQmlIntegration>
 
 #include "dialogbutton.hpp"
 #include "dialogservice.hpp"

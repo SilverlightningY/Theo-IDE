@@ -1,4 +1,3 @@
-#include "dialogbutton.hpp"
 #include "messagedialogdto.hpp"
 
 MessageDialogDTO::MessageDialogDTO(const QString& title, const QString& text,

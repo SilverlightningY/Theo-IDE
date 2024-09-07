@@ -1,4 +1,3 @@
-#include <QQuickTextDocument>
 #include <QtLogging>
 
 #include "lineinfocolumnmodel.hpp"

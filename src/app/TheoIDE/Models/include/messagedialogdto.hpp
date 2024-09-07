@@ -1,8 +1,9 @@
 #ifndef _THEOIDE_MODELS_MESSAGEDIALOGMODEL_
 #define _THEOIDE_MODELS_MESSAGEDIALOGMODEL_
 
-#include <qmap.h>
-
+#include <QList>
+#include <QMap>
+#include <QString>
 #include <functional>
 #include <optional>
 
