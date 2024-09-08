@@ -369,10 +369,11 @@ void EditorModel::closeTabAt(qsizetype index) {
     removeTab();
     return;
   }
-#ifdef THEOIDE_MESSAGE_DIALOG_SUPPORTED
   if (_dialogService.isNull()) {
-    qCritical() << "Tried to close a modified tab, but the dialog service is "
-                   "null. Action aborted.";
+    qCritical()
+        << "Tried to ask the user if the unsaved changes should be saved "
+           "before closing the tab, but the dialog service is null.";
+    removeTab();
     return;
   }
   const std::function<void(void)> saveTab = [this, tabModel,
@@ -381,9 +382,6 @@ void EditorModel::closeTabAt(qsizetype index) {
     removeTab();
   };
   _dialogService->addUnsavedChangesInFile(tabModel->name(), saveTab, removeTab);
-#else
-  removeTab();
-#endif  // THEOIDE_MESSAGEDIALOG_SUPPORTED
 }
 
 TabModelOptional EditorModel::tabAt(qsizetype index) const {
@@ -506,7 +504,6 @@ void EditorModel::displayFileReadMaxReadFileSizeExceededFailure(
 
 void EditorModel::displayFileReadFailure(QSharedPointer<QFile> file,
                                          const FileError& error) {
-#ifdef THEOIDE_MESSAGE_DIALOG_SUPPORTED
   if (_dialogService.isNull()) {
     qCritical() << "An error occured but the dialog service was null:"
                 << error.what();
@@ -539,9 +536,6 @@ void EditorModel::displayFileReadFailure(QSharedPointer<QFile> file,
     _dialogService->addFileDoesNotExist(fileDoesNotExistError->fileName());
     return;
   }
-#else
-  qWarning() << "An error occured:" << error.what();
-#endif
 }
 
 void EditorModel::updateMainTabIndex() {

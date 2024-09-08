@@ -7,8 +7,12 @@ DialogService::DialogService(QObject* parent) : QObject(parent) {}
 DialogService::~DialogService() {}
 
 void DialogService::add(QSharedPointer<MessageDialogDTO> dto) {
+#ifdef THEOIDE_MESSAGE_DIALOG_SUPPORTED
   _dialogDTOs.append(dto);
   emit elementAdded();
+#else
+  dto->runMainCallback();
+#endif
 }
 
 std::optional<QSharedPointer<MessageDialogDTO>> DialogService::remove() {
@@ -53,7 +57,7 @@ void DialogService::addUnsavedChangesInFile(
   auto dto = QSharedPointer<MessageDialogDTO>(
       new MessageDialogDTO(title, text, std::nullopt, informativeText));
   dto->setButtonWithCallback(DialogButton::Save, onSave);
-  dto->setButtonWithCallback(DialogButton::Discard, onDiscard);
+  dto->setButtonWithMainCallback(DialogButton::Discard, onDiscard);
   add(dto);
 }
 

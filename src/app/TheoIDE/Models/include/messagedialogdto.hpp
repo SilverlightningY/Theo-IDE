@@ -23,9 +23,12 @@ class MessageDialogDTO {
   DialogModelText detailedText() const;
   DialogModelText informativeText() const;
   void setButtonWithCallback(DialogButton button, DialogModelCallback callback);
+  void setButtonWithMainCallback(DialogButton button,
+                                 DialogModelCallback callback);
   void setButton(DialogButton button);
   bool hasCallbackFor(DialogButton button) const;
   void runCallbackFor(DialogButton button) const;
+  void runMainCallback() const;
   QList<DialogButton> activeDialogButtons() const;
 
  private:
@@ -33,6 +36,7 @@ class MessageDialogDTO {
   QString _title;
   DialogModelText _detailedText;
   DialogModelText _informativeText;
+  std::optional<DialogButton> _mainActionButton;
   QMap<DialogButton, DialogModelCallback> _buttonCallbacks;
 };
 

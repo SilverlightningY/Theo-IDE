@@ -1,3 +1,4 @@
+#include "dialogbutton.hpp"
 #include "messagedialogdto.hpp"
 
 MessageDialogDTO::MessageDialogDTO(const QString& title, const QString& text,
@@ -40,4 +41,17 @@ void MessageDialogDTO::runCallbackFor(DialogButton button) const {
 
 QList<DialogButton> MessageDialogDTO::activeDialogButtons() const {
   return _buttonCallbacks.keys();
+}
+
+void MessageDialogDTO::setButtonWithMainCallback(DialogButton button,
+                                                 DialogModelCallback callback) {
+  _mainActionButton = button;
+  setButtonWithCallback(button, callback);
+}
+
+void MessageDialogDTO::runMainCallback() const {
+  if (_mainActionButton.has_value() &&
+      hasCallbackFor(_mainActionButton.value())) {
+    runCallbackFor(_mainActionButton.value());
+  }
 }
