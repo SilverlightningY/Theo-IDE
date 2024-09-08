@@ -33,6 +33,7 @@ class DialogService : public QObject {
   void addMainScriptIsEmpty();
   void addNoMainScriptSelected();
   void addCompilationFailed(const Theo::CodegenResult& result);
+  void addExecutionFailedForInternalReason();
 
   std::optional<QSharedPointer<MessageDialogDTO>> remove();
   bool isEmpty() const;

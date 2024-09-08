@@ -613,4 +613,12 @@ void EditorModel::compilationRevisionAvailable(int revision) {
     return;
   }
   setIsRunning(false);
+void EditorModel::displayExecutionFailedForInternalReason() {
+  if (_dialogService.isNull()) {
+    qCritical()
+        << "Tried to inform the user that the execution failed because of some "
+           "intrnal programming fault, but the dialog service is null";
+    return;
+  }
+  _dialogService->addExecutionFailedForInternalReason();
 }

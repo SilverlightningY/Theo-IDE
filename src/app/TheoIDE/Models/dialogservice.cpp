@@ -134,3 +134,17 @@ void DialogService::addCompilationFailed(const Theo::CodegenResult& result) {
   dto->setButton(DialogButton::Ok);
   add(dto);
 }
+
+void DialogService::addExecutionFailedForInternalReason() {
+  const QString title = tr("Execution failed");
+  const QString text =
+      tr("The execution failed because of some wrong assigned variables and "
+         "illegal state of the Theo IDE application.");
+  const QString informativeText =
+      tr("Try to restart the IDE. If the issue persists, please inform the "
+         "developers.");
+  auto dto = QSharedPointer<MessageDialogDTO>(
+      new MessageDialogDTO(title, text, std::nullopt, informativeText));
+  dto->setButton(DialogButton::Ok);
+  add(dto);
+}

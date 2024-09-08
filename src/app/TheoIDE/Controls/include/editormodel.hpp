@@ -173,6 +173,7 @@ class EditorModel : public QAbstractListModel {
   void updateMainTabIndex();
   void updateAllTabNames();
   void compilationRevisionAvailable(int revision);
+  void displayExecutionFailedForInternalReason();
 
  private:
   int _mainTabIndex = -1;
