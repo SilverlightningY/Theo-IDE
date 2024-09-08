@@ -11,6 +11,23 @@ Item {
     property alias implicitWidth: debugControls.implicitWidth
     required property EditorModel model
 
+    states: [
+        State {
+            name: "debugging"
+            when: root.model.runningMode === EditorModel.Debugging
+            extend: "running"
+        },
+        State {
+            name: "running"
+            when: root.model.runningMode !== EditorModel.Idle
+            PropertyChanges {
+                mainTabComboBox {
+                    enabled: false
+                }
+            }
+        }
+    ]
+
     Column {
         id: debugControlsContainer
         anchors.left: parent.left
@@ -104,7 +121,7 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     textRole: "tabName"
-                    enabled: !root.model.isRunning && count > 0
+                    enabled: count > 0
 
                     function updateMainTabIndex(index: int): void {
                         root.model.mainTabIndex = index;

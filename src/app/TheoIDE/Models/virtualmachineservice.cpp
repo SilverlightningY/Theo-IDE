@@ -64,6 +64,7 @@ void VirtualMachineService::deinitVirtualMachine() {
   _virtualMachine.clear();
   emit isRunningChanged();
   setIsDebugging(false);
+  emit executionCompleted();
 }
 
 bool VirtualMachineService::programEndReached() const {

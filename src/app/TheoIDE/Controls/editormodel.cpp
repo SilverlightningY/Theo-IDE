@@ -3,11 +3,12 @@
 #include <optional>
 #include <ranges>
 
+#include "VM/include/program.hpp"
 #include "compilerservice.hpp"
 #include "dialogservice.hpp"
-#include "editormodel.hpp"
 #include "filesystemservice.hpp"
 #include "gen.hpp"
+#include "virtualmachineservice.hpp"
 
 EditorModel::EditorModel(QObject* parent) : QAbstractListModel(parent) {
   connect(this, &QAbstractListModel::rowsInserted, this,
@@ -20,15 +21,17 @@ EditorModel::EditorModel(QObject* parent) : QAbstractListModel(parent) {
 EditorModel::~EditorModel() {}
 
 QHash<int, QByteArray> EditorModel::roleNames() const {
-  return QHash<int, QByteArray>{{Qt::DisplayRole, "display"},
-                                {StoredTabTextRole, "storedTabText"},
-                                {TabNameRole, "tabName"},
-                                {DisplayTabNameRole, "displayTabName"},
-                                {IsModifiedRole, "isModified"},
-                                {IsTemporaryRole, "isTemporary"},
-                                {TextDocumentRole, "textDocument"},
-                                {OpenRole, "open"},
-                                {IsReadOnlyRole, "isReadOnly"}};
+  return QHash<int, QByteArray>{
+      {Qt::DisplayRole, "display"},
+      {StoredTabTextRole, "storedTabText"},
+      {TabNameRole, "tabName"},
+      {DisplayTabNameRole, "displayTabName"},
+      {IsModifiedRole, "isModified"},
+      {IsTemporaryRole, "isTemporary"},
+      {TextDocumentRole, "textDocument"},
+      {OpenRole, "open"},
+      {IsReadOnlyRole, "isReadOnly"},
+      {BackgroundCompilationTimerRole, "backgroundCompilationTimer"}};
 }
 
 int EditorModel::rowCount(const QModelIndex& index) const {
@@ -56,7 +59,7 @@ QVariant EditorModel::data(const QModelIndex& index, int role) const {
 
 bool EditorModel::isTabReadOnlyAt(qsizetype index) const {
   Q_UNUSED(index)
-  return isRunning();
+  return _runningMode != Idle;
 }
 
 QString EditorModel::storedTabTextAt(qsizetype index) const {
@@ -132,8 +135,9 @@ bool EditorModel::setTextDocumentVariantAt(qsizetype index,
     qCritical() << "Cast from QVariant to QQuickTextDocument* failed";
     return false;
   }
+  const QPointer<QTextDocument> textDocument(quickTextDocument->textDocument());
   auto tab = tabOptional.value();
-  tab->setTextDocument(quickTextDocument->textDocument());
+  tab->setTextDocument(textDocument);
   return true;
 }
 
@@ -243,21 +247,27 @@ void EditorModel::createNewTab() {
   emit endInsertRows();
 }
 
-bool EditorModel::isRunning() const { return _isRunning; }
-
-void EditorModel::setIsRunning(bool isRunning) {
-  if (_isRunning != isRunning) {
-    _isRunning = isRunning;
-    emit isRunningChanged(isRunning);
+void EditorModel::runScript() {
+  setRunningMode(Running);
+  const bool compilationTaskPushed = tryPushCompilationTask();
+  if (!compilationTaskPushed) {
+    setRunningMode(Idle);
   }
 }
 
-void EditorModel::runScript() {
-  setIsRunning(true);
+void EditorModel::runScriptInDebugMode() {
+  setRunningMode(Debugging);
   const bool compilationTaskPushed = tryPushCompilationTask();
   if (!compilationTaskPushed) {
-    setIsRunning(false);
+    setRunningMode(Idle);
   }
+}
+
+void EditorModel::stopExecution() {
+  if (_virtualMachineService.isNull()) {
+    return;
+  }
+  _virtualMachineService->stopExecution();
 }
 
 bool EditorModel::compilationPreconditionsFulfilled() const {
@@ -346,8 +356,6 @@ CompilationTask EditorModel::createCompilationTaskFromTabContent() const {
   }
   return CompilationTask(revision, content, mainTabName);
 }
-
-void EditorModel::runScriptInDebugMode() {}
 
 void EditorModel::closeTabAt(qsizetype index) {
   QMutexLocker locker(&_tabsMutex);
@@ -567,7 +575,7 @@ void EditorModel::connectCompilerService() {
     return;
   }
   connect(_compilerService, &CompilerService::atLeastRevisionAvailable, this,
-          &EditorModel::compilationRevisionAvailable);
+          &EditorModel::handleCompilationRevisionAvailable);
   connect(this, &EditorModel::rowsInserted, _compilerService,
           &CompilerService::reset);
   connect(this, &EditorModel::rowsRemoved, _compilerService,
@@ -584,26 +592,32 @@ void EditorModel::disconnectCompilerService() {
   disconnect(this, nullptr, _compilerService, nullptr);
 }
 
-void EditorModel::compilationRevisionAvailable(int revision) {
+QSharedPointer<CompilationResult> EditorModel::latestCompilationResult() const {
+  if (_compilerService.isNull()) {
+    qCritical() << "Tried to get the latest compilation result, but the "
+                   "compiler service is null";
+    return nullptr;
+  }
+  const auto result = _compilerService->result();
+  if (result.isNull()) {
+    qCritical() << "Compiler service has provided a null reference to result.";
+  }
+  return result;
+}
+
+void EditorModel::handleCompilationRevisionAvailable(int revision) {
   if (revision < _currentRunRevision) {
     return;
   }
-  if (_compilerService.isNull()) {
-    qCritical() << "Compilation revision received, but reference of compiler "
-                   "service is null";
-    setIsRunning(false);
-    return;
-  }
-  const auto compilationResult = _compilerService->result();
+  const auto compilationResult = latestCompilationResult();
   if (compilationResult.isNull()) {
-    qCritical() << "Compiler service has provided a null reference to result.";
-    setIsRunning(false);
+    setRunningMode(Idle);
     return;
   }
   qDebug() << "Compilation result received" << compilationResult->revision();
   const Theo::CodegenResult result = compilationResult->result();
   if (!result.generated_correctly) {
-    setIsRunning(false);
+    setRunningMode(Idle);
     if (_dialogService.isNull()) {
       qCritical() << "Tried to inform the user that the compilation failed, "
                      "but the dialog service is null";
@@ -612,7 +626,53 @@ void EditorModel::compilationRevisionAvailable(int revision) {
     _dialogService->addCompilationFailed(result);
     return;
   }
-  setIsRunning(false);
+  startVirtualMachine(result.code);
+}
+
+void EditorModel::startVirtualMachine(const Theo::Program& program) {
+  if (_virtualMachineService.isNull()) {
+    setRunningMode(Idle);
+    qCritical() << "Tried to start vm, but virtual machine service is null";
+    return;
+  }
+  switch (_runningMode) {
+    case Debugging:
+      _virtualMachineService->debug(program);
+      return;
+    case Running:
+      _virtualMachineService->execute(program);
+      return;
+    default:
+      break;
+  }
+}
+
+VirtualMachineService* EditorModel::virtualMachineService() const {
+  return _virtualMachineService.data();
+}
+
+void EditorModel::setVirtualMachineService(
+    VirtualMachineService* virtualMachineService) {
+  if (_virtualMachineService != virtualMachineService) {
+    _virtualMachineService = QPointer(virtualMachineService);
+    emit virtualMachineServiceChanged();
+  }
+}
+
+void EditorModel::connectVirtualMachineService() {
+  if (_virtualMachineService.isNull()) {
+    return;
+  }
+  connect(_virtualMachineService,
+          &VirtualMachineService::executionFailedForInternalReason, this,
+          &EditorModel::displayExecutionFailedForInternalReason);
+  connect(_virtualMachineService,
+          &VirtualMachineService::executionFailedForInternalReason, this,
+          &EditorModel::handleExecutionCompleted);
+  connect(_virtualMachineService, &VirtualMachineService::executionCompleted,
+          this, &EditorModel::handleExecutionCompleted);
+}
+
 void EditorModel::displayExecutionFailedForInternalReason() {
   if (_dialogService.isNull()) {
     qCritical()
@@ -621,4 +681,27 @@ void EditorModel::displayExecutionFailedForInternalReason() {
     return;
   }
   _dialogService->addExecutionFailedForInternalReason();
+}
+
+void EditorModel::disconnectVirtualMachineService() {
+  if (_virtualMachineService.isNull()) {
+    return;
+  }
+  disconnect(_virtualMachineService, nullptr, this, nullptr);
+}
+
+void EditorModel::handleExecutionCompleted() {
+  qInfo() << "Execution completed";
+  setRunningMode(Idle);
+}
+
+void EditorModel::setRunningMode(RunningMode runningMode) {
+  if (_runningMode != runningMode) {
+    _runningMode = runningMode;
+    emit runningModeChanged(runningMode);
+  }
+}
+
+EditorModel::RunningMode EditorModel::runningMode() const {
+  return _runningMode;
 }

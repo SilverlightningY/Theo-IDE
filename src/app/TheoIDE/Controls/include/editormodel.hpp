@@ -17,9 +17,11 @@
 #include <optional>
 #include <stdexcept>
 
+#include "VM/include/program.hpp"
 #include "compilerservice.hpp"
 #include "dialogservice.hpp"
 #include "filesystemservice.hpp"
+#include "virtualmachineservice.hpp"
 
 using FileOptional = std::optional<QSharedPointer<QFile>>;
 
@@ -105,7 +107,11 @@ class EditorModel : public QAbstractListModel {
                  setDialogService NOTIFY dialogServiceChanged)
   Q_PROPERTY(CompilerService* compilerService READ compilerService WRITE
                  setCompilerService NOTIFY compilerServiceChanged)
-  Q_PROPERTY(bool isRunning READ isRunning NOTIFY isRunningChanged)
+  Q_PROPERTY(
+      VirtualMachineService* virtualMachineService READ virtualMachineService
+          WRITE setVirtualMachineService NOTIFY virtualMachineServiceChanged)
+  Q_PROPERTY(EditorModel::RunningMode runningMode READ runningMode NOTIFY
+                 runningModeChanged)
   QML_ELEMENT
  public:
   EditorModel(QObject* parent = nullptr);
@@ -119,10 +125,18 @@ class EditorModel : public QAbstractListModel {
     TextDocumentRole,
     OpenRole,
     IsReadOnlyRole,
+    BackgroundCompilationTimerRole,
   };
+  enum RunningMode {
+    Idle = 0,
+    Running,
+    Debugging,
+  };
+  Q_ENUM(RunningMode)
   CompilerService* compilerService() const;
   DialogService* dialogService() const;
   FileSystemService* fileSystemService() const;
+  VirtualMachineService* virtualMachineService() const;
   QHash<int, QByteArray> roleNames() const override;
   QVariant data(const QModelIndex& index, int role) const override;
   bool setData(const QModelIndex& index, const QVariant& data,
@@ -130,7 +144,7 @@ class EditorModel : public QAbstractListModel {
   int mainTabIndex() const;
   int currentTabIndex() const;
   int rowCount(const QModelIndex& index) const override;
-  bool isRunning() const;
+  RunningMode runningMode() const;
   void saveTabAt(qsizetype index);
   void closeTabAt(qsizetype index);
 
@@ -144,6 +158,8 @@ class EditorModel : public QAbstractListModel {
   void runScript();
   Q_INVOKABLE
   void runScriptInDebugMode();
+  Q_INVOKABLE
+  void stopExecution();
 
  public slots:
   void createTabFromFile(QSharedPointer<QFile> file, const QString& storedText);
@@ -152,6 +168,7 @@ class EditorModel : public QAbstractListModel {
   void setCompilerService(CompilerService* compilerservice);
   void setDialogService(DialogService* dialogService);
   void setFileSystemService(FileSystemService* fileSystemService);
+  void setVirtualMachineService(VirtualMachineService* virtualMachineService);
   void setMainTabIndex(int index);
   void setCurrentTabIndex(int index);
   void displayFileReadMaxReadFileSizeExceededFailure(
@@ -166,14 +183,17 @@ class EditorModel : public QAbstractListModel {
   void compilerServiceChanged();
   void dialogServiceChanged();
   void fileSystemServiceChanged();
+  void virtualMachineServiceChanged();
   void mainTabIndexChanged(int index);
-  void isRunningChanged(bool isRunning);
+  void runningModeChanged(RunningMode runningMode);
 
  protected slots:
   void updateMainTabIndex();
   void updateAllTabNames();
-  void compilationRevisionAvailable(int revision);
+  void handleCompilationRevisionAvailable(int revision);
+  void handleExecutionCompleted();
   void displayExecutionFailedForInternalReason();
+  void updateRevision();
 
  private:
   int _mainTabIndex = -1;
@@ -181,12 +201,13 @@ class EditorModel : public QAbstractListModel {
   QPointer<FileSystemService> _fileSystemService;
   QPointer<DialogService> _dialogService;
   QPointer<CompilerService> _compilerService;
+  QPointer<VirtualMachineService> _virtualMachineService;
   QList<QSharedPointer<TabModel>> _tabs;
   mutable QMutex _tabsMutex;
   mutable QMutex _temporaryTabIndexesMutex;
   QMap<QSharedPointer<TabModel>, int> _temporaryTabIndexes;
   long long _currentRunRevision = 0;
-  bool _isRunning = false;
+  RunningMode _runningMode = Idle;
 
   QString tabNameAt(qsizetype index) const;
   QString storedTabTextAt(qsizetype index) const;
@@ -208,11 +229,15 @@ class EditorModel : public QAbstractListModel {
   bool setTextDocumentVariantAt(qsizetype index, const QVariant& data);
   bool setOpenAt(qsizetype index, const QVariant& data);
   CompilationTask createCompilationTaskFromTabContent() const;
-  void setIsRunning(bool isRunning);
   void updateTabNameAt(qsizetype index);
   bool tryPushCompilationTask();
   bool compilationPreconditionsFulfilled() const;
   bool isMainTabIndex(int index) const;
+  void connectVirtualMachineService();
+  void disconnectVirtualMachineService();
+  void startVirtualMachine(const Theo::Program& program);
+  void setRunningMode(RunningMode runningMode);
+  QSharedPointer<CompilationResult> latestCompilationResult() const;
 };
 
 #endif
