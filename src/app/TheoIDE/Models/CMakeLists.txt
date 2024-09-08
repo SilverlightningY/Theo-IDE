@@ -10,6 +10,7 @@ qt_add_qml_module(
         dialogservice.cpp include/dialogservice.hpp
         filesystemservice.cpp include/filesystemservice.hpp
         messagedialogdto.cpp include/messagedialogdto.hpp
+        virtualmachineservice.cpp include/virtualmachineservice.hpp
 )
 
 target_include_directories(
