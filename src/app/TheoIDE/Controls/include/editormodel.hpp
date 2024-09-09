@@ -1,6 +1,8 @@
 #ifndef _THEOIDE_CONTROLS_EDITORMODEL_
 #define _THEOIDE_CONTROLS_EDITORMODEL_
 
+#include <qtmetamacros.h>
+
 #include <QAbstractItemModel>
 #include <QDir>
 #include <QList>

@@ -1,7 +1,7 @@
+#include <optional>
+
 #include "dialogbutton.hpp"
 #include "dialogservice.hpp"
-#include "gen.hpp"
-#include "messagedialogdto.hpp"
 
 DialogService::DialogService(QObject* parent) : QObject(parent) {}
 DialogService::~DialogService() {}

@@ -1,14 +1,9 @@
+#include <QtLogging>
 #include <algorithm>
 #include <functional>
-#include <optional>
 #include <ranges>
 
-#include "VM/include/program.hpp"
-#include "compilerservice.hpp"
-#include "dialogservice.hpp"
-#include "filesystemservice.hpp"
-#include "gen.hpp"
-#include "virtualmachineservice.hpp"
+#include "editormodel.hpp"
 
 EditorModel::EditorModel(QObject* parent) : QAbstractListModel(parent) {
   connect(this, &QAbstractListModel::rowsInserted, this,
