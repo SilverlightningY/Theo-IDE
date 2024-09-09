@@ -1,5 +1,3 @@
-#include "editormodel.hpp"
-
 #include <QTextBlock>
 #include <QtGlobal>
 #include <QtLogging>
@@ -8,6 +6,7 @@
 #include <functional>
 #include <ranges>
 
+#include "editormodel.hpp"
 #include "executionstate.hpp"
 #include "virtualmachineservice.hpp"
 

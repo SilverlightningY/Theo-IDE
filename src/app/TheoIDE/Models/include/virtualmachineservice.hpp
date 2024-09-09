@@ -28,7 +28,7 @@ class ActivationsAreEmptyError : public std::runtime_error {
  public:
   ActivationsAreEmptyError()
       : std::runtime_error("The activations vector of the vm is empty") {}
-  ~ActivationsAreEmptyError(){};
+  ~ActivationsAreEmptyError() {};
 };
 
 class VirtualMachineService : public QObject {

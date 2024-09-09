@@ -1,9 +1,8 @@
-#include "variablesstatemodel.hpp"
-
 #include <QtGlobal>
 #include <algorithm>
 #include <iterator>
 
+#include "variablesstatemodel.hpp"
 #include "virtualmachineservice.hpp"
 
 VariablesStateModel::VariablesStateModel(QObject* parent)
