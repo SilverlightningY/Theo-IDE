@@ -76,6 +76,8 @@ class TabModel {
     return _textDocument && _textDocument->isModified();
   }
   bool isTemporary() const { return !_file.has_value(); }
+  int cursorLineNumber() const { return _cursorLineNumber; }
+  int cursorPosition() const { return _cursorPosition; }
 
   void setName(const QString& name) { _name = name; }
   void setStoredText(const QString& text) { _storedText = text; }
@@ -86,6 +88,12 @@ class TabModel {
   void setTextDocument(QTextDocument* textDocument) {
     _textDocument = textDocument;
   }
+  void setCursorLineNumber(int cursorLineNumber) {
+    _cursorLineNumber = cursorLineNumber;
+  }
+  void setCursorPosition(int cursorPosition) {
+    _cursorPosition = cursorPosition;
+  }
 
  private:
   QPointer<QTextDocument> _textDocument;
@@ -93,6 +101,8 @@ class TabModel {
   QString _name;
   QString _storedText;
   QList<int> _activeBreakPoints;
+  int _cursorLineNumber = 1;
+  int _cursorPosition = 0;
 };
 
 using TabModelOptional = std::optional<QSharedPointer<TabModel>>;
@@ -118,7 +128,7 @@ class EditorModel : public QAbstractListModel {
  public:
   EditorModel(QObject* parent = nullptr);
   ~EditorModel();
-  enum EditorModelRoles {
+  enum EditorModelRole {
     StoredTabTextRole = Qt::UserRole + 1,
     TabNameRole,
     DisplayTabNameRole,
@@ -128,6 +138,9 @@ class EditorModel : public QAbstractListModel {
     OpenRole,
     IsReadOnlyRole,
     BackgroundCompilationTimerRole,
+    CursorPositionRole,
+    CursorPositionEditRole,
+    CursorLineNumberRole,
   };
   enum RunningMode {
     Idle = 0,
@@ -240,6 +253,17 @@ class EditorModel : public QAbstractListModel {
   void startVirtualMachine(const Theo::Program& program);
   void setRunningMode(RunningMode runningMode);
   QSharedPointer<CompilationResult> latestCompilationResult() const;
+  int cursorPositionAt(int index) const;
+  int cursorLineNumberAt(int index) const;
+  bool setCursorPositionAt(int index, int position);
+  bool setCursorPositionVariantAt(int index, const QVariant& value, int role);
+  void setCursorPositionWithEditRoleAt(int index, int position);
+  void setCursorPositionWithDisplayRoleAt(int index, int position);
+  void setCursorPositionWithRoleAt(int index, int position,
+                                   EditorModelRole role);
+  bool setLineNumberAt(int index, int lineNumber);
+  void updateCursorPositionFromLineNumberAt(int index);
+  void updateLineNumberFromCursorPositionAt(int index);
 };
 
 #endif

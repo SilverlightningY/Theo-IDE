@@ -1,3 +1,5 @@
+#include <QTextBlock>
+#include <QtGlobal>
 #include <QtLogging>
 #include <algorithm>
 #include <functional>
@@ -26,7 +28,10 @@ QHash<int, QByteArray> EditorModel::roleNames() const {
       {TextDocumentRole, "textDocument"},
       {OpenRole, "open"},
       {IsReadOnlyRole, "isReadOnly"},
-      {BackgroundCompilationTimerRole, "backgroundCompilationTimer"}};
+      {BackgroundCompilationTimerRole, "backgroundCompilationTimer"},
+      {CursorPositionRole, "cursorPosition"},
+      {CursorPositionEditRole, "cursorPositionEdit"},
+      {CursorLineNumberRole, "cursorLineNumber"}};
 }
 
 int EditorModel::rowCount(const QModelIndex& index) const {
@@ -48,6 +53,10 @@ QVariant EditorModel::data(const QModelIndex& index, int role) const {
       return isTabTemporaryAt(index.row());
     case IsReadOnlyRole:
       return isTabReadOnlyAt(index.row());
+    case CursorPositionRole:
+      return cursorPositionAt(index.row());
+    case CursorLineNumberRole:
+      return cursorLineNumberAt(index.row());
   }
   return QVariant();
 }
@@ -98,6 +107,10 @@ bool EditorModel::setData(const QModelIndex& index, const QVariant& data,
       return setTextDocumentVariantAt(index.row(), data);
     case OpenRole:
       return setOpenAt(index.row(), data);
+    case CursorPositionEditRole:
+      return setCursorPositionVariantAt(index.row(), data, role);
+    case CursorPositionRole:
+      return setCursorPositionVariantAt(index.row(), data, role);
   }
   return false;
 }
@@ -228,7 +241,7 @@ void EditorModel::saveTabAt(qsizetype index) {
 }
 
 void EditorModel::saveTab(QSharedPointer<TabModel> tab) {
-  qDebug() << "save tab" << tab->name();
+  qDebug() << "save tab not implemented:" << tab->name();
 }
 
 void EditorModel::createNewTab() {
@@ -699,4 +712,142 @@ void EditorModel::setRunningMode(RunningMode runningMode) {
 
 EditorModel::RunningMode EditorModel::runningMode() const {
   return _runningMode;
+}
+
+int EditorModel::cursorPositionAt(int index) const {
+  const auto tabOptional = tabAt(index);
+  if (!tabOptional.has_value() || tabOptional.value().isNull()) {
+    return 0;
+  }
+  const auto tab = tabOptional.value();
+  return tab->cursorPosition();
+}
+
+int EditorModel::cursorLineNumberAt(int index) const {
+  const auto tabOptional = tabAt(index);
+  if (!tabOptional.has_value() || tabOptional.value().isNull()) {
+    return 1;
+  }
+  const auto tab = tabOptional.value();
+  return tab->cursorLineNumber();
+}
+
+bool positionOutOfRange(QPointer<QTextDocument> textDocument, int position) {
+  if (textDocument.isNull() || position < 0) {
+    return true;
+  }
+  QTextBlock lastBlock = textDocument->lastBlock();
+  const int lastPosition =
+      qMax(lastBlock.position(), lastBlock.position() + lastBlock.length() - 1);
+  return position > lastPosition;
+}
+
+bool EditorModel::setCursorPositionAt(int index, int position) {
+  const auto tabOptional = tabAt(index);
+  if (!tabOptional.has_value() || tabOptional.value().isNull()) {
+    return false;
+  }
+  auto tab = tabOptional.value();
+  if (tab->cursorPosition() == position || position < 0) {
+    return false;
+  }
+  if (tab->textDocument().isNull() || tab->textDocument()->isEmpty()) {
+    const bool changed = tab->cursorPosition() != 0;
+    tab->setCursorPosition(0);
+    return changed;
+  }
+  const auto textDocument = tab->textDocument();
+  if (positionOutOfRange(textDocument, position)) {
+    return false;
+  }
+  tab->setCursorPosition(position);
+  return true;
+}
+
+void EditorModel::updateLineNumberFromCursorPositionAt(int index) {
+  const auto tabOptional = tabAt(index);
+  if (!tabOptional.has_value() || tabOptional.value().isNull()) {
+    return;
+  }
+  auto tab = tabOptional.value();
+  const int cursorPosition = tab->cursorPosition();
+  const auto textDocument = tab->textDocument();
+  if (textDocument.isNull() ||
+      positionOutOfRange(textDocument, cursorPosition)) {
+    return;
+  }
+  if (cursorPosition == 0) {
+    setLineNumberAt(index, 1);
+    return;
+  }
+  const QTextBlock block = textDocument->findBlock(cursorPosition);
+  setLineNumberAt(index, block.blockNumber() + 1);
+}
+
+void EditorModel::updateCursorPositionFromLineNumberAt(int index) {
+  const auto tabOptional = tabAt(index);
+  if (!tabOptional.has_value() || tabOptional.value().isNull()) {
+    return;
+  }
+  auto tab = tabOptional.value();
+  const int lineNumber = tab->cursorLineNumber();
+  const auto textDocument = tab->textDocument();
+  if (textDocument.isNull() || lineNumber > textDocument->blockCount()) {
+    return;
+  }
+  const QTextBlock block = textDocument->findBlockByNumber(lineNumber);
+  setCursorPositionWithDisplayRoleAt(index, block.position());
+  setCursorPositionWithEditRoleAt(index, block.position());
+}
+
+bool EditorModel::setCursorPositionVariantAt(int index, const QVariant& value,
+                                             int role) {
+  if (value.isValid() && value.canConvert<int>()) {
+    const int position = value.toInt();
+    switch (role) {
+      case CursorPositionRole:
+        setCursorPositionWithDisplayRoleAt(index, position);
+        updateLineNumberFromCursorPositionAt(index);
+        return true;
+      case CursorPositionEditRole:
+        setCursorPositionWithEditRoleAt(index, position);
+        updateLineNumberFromCursorPositionAt(index);
+        return true;
+      default:
+        return false;
+    }
+  }
+  return false;
+}
+
+void EditorModel::setCursorPositionWithEditRoleAt(int index, int position) {
+  setCursorPositionWithRoleAt(index, position, CursorPositionEditRole);
+}
+
+void EditorModel::setCursorPositionWithDisplayRoleAt(int index, int position) {
+  setCursorPositionWithRoleAt(index, position, CursorPositionRole);
+}
+
+void EditorModel::setCursorPositionWithRoleAt(int index, int position,
+                                              EditorModelRole role) {
+  const bool positionChanged = setCursorPositionAt(index, position);
+  if (positionChanged) {
+    const QModelIndex modelIndex = createIndex(index, 0);
+    emit dataChanged(modelIndex, modelIndex, {role});
+  }
+}
+
+bool EditorModel::setLineNumberAt(int index, int lineNumber) {
+  const auto tabOptional = tabAt(index);
+  if (!tabOptional.has_value() || tabOptional.value().isNull()) {
+    return false;
+  }
+  auto tab = tabOptional.value();
+  if (tab->cursorLineNumber() == lineNumber || lineNumber < 1) {
+    return false;
+  }
+  tab->setCursorLineNumber(lineNumber);
+  const QModelIndex modelIndex = createIndex(index, 0);
+  emit dataChanged(modelIndex, modelIndex, {CursorLineNumberRole});
+  return true;
 }

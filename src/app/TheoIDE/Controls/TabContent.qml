@@ -9,16 +9,17 @@ Item {
     readonly property int innerMargin: 8
     property alias text: textEdit.text
     property alias textDocument: textEdit.textDocument
+    property int currentLineNumber: 1
+    property alias currentCursorPosition: textEdit.cursorPosition
 
     Rectangle {
         id: currentLineHighlight
-        color: ApplicationSettings.primary
+        color: ApplicationSettings.currentLineBackground
         anchors.left: parent.left
         anchors.right: parent.right
         height: parent.currentItem ? parent.currentItem.height : 0
         y: parent.currentItem ? parent.currentItem.y + parent.innerMargin : 0
         z: 0
-        visible: false
     }
 
     LineInfoColumn {
@@ -31,13 +32,28 @@ Item {
         bottomMargin: root.innerMargin
         topMargin: root.innerMargin
         width: implicitWidth
-        currentIndex: 1
+        currentIndex: root.currentLineNumber - 1
         model: LineInfoColumnModel {
             id: lineInfoColumnModel
             textDocument: textEdit.textDocument
         }
         contentY: textEdit.contentY
         interactive: false
+        z: 1
+
+        readonly property int currentLineIndex: root.currentLineNumber - 1
+
+        function updateCurrentIndex(): void {
+            if (currentLineIndex >= count) {
+                return;
+            }
+            currentIndex = currentLineIndex;
+        }
+
+        Component.onCompleted: {
+            root.currentLineNumberChanged.connect(updateCurrentIndex);
+            lineInfoColumn.countChanged.connect(updateCurrentIndex);
+        }
     }
 
     PlainTextEditor {
@@ -47,5 +63,6 @@ Item {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         innerMargin: root.innerMargin
+        z: 1
     }
 }

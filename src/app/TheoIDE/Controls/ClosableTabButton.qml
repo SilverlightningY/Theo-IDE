@@ -11,6 +11,7 @@ T.TabButton {
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset, implicitContentHeight + topPadding + bottomPadding)
 
     signal closeTriggered
+    property bool closeEnabled: true
 
     leftPadding: 12
     rightPadding: 0
@@ -44,6 +45,7 @@ T.TabButton {
             icon.width: 18
             icon.height: 18
             onClicked: control.closeTriggered()
+            enabled: control.closeEnabled
             Layout.minimumWidth: width
         }
     }
