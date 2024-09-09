@@ -1,6 +1,7 @@
 #ifndef _THEOIDE_CONTROLS_EDITORMODEL_
 #define _THEOIDE_CONTROLS_EDITORMODEL_
 
+#include <qtimer.h>
 #include <qtmetamacros.h>
 
 #include <QAbstractItemModel>
@@ -22,6 +23,7 @@
 #include "VM/include/program.hpp"
 #include "compilerservice.hpp"
 #include "dialogservice.hpp"
+#include "executionstate.hpp"
 #include "filesystemservice.hpp"
 #include "virtualmachineservice.hpp"
 
@@ -124,6 +126,12 @@ class EditorModel : public QAbstractListModel {
           WRITE setVirtualMachineService NOTIFY virtualMachineServiceChanged)
   Q_PROPERTY(EditorModel::RunningMode runningMode READ runningMode NOTIFY
                  runningModeChanged)
+  Q_PROPERTY(int compilationTimeoutMs READ compilationTimeoutMs WRITE
+                 setCompilationTimeoutMs NOTIFY compilationTimeoutMsChanged)
+  Q_PROPERTY(int executionTimeoutMs READ executionTimeoutMs WRITE
+                 setExecutionTimeoutMs NOTIFY executionTimeoutMsChanged)
+  Q_PROPERTY(ExecutionState executionState READ executionState NOTIFY
+                 executionStateChanged)
   QML_ELEMENT
  public:
   EditorModel(QObject* parent = nullptr);
@@ -143,9 +151,8 @@ class EditorModel : public QAbstractListModel {
     CursorLineNumberRole,
   };
   enum RunningMode {
-    Idle = 0,
-    Running,
-    Debugging,
+    Default,
+    Debug,
   };
   Q_ENUM(RunningMode)
   CompilerService* compilerService() const;
@@ -158,6 +165,9 @@ class EditorModel : public QAbstractListModel {
                int role) override;
   int mainTabIndex() const;
   int currentTabIndex() const;
+  int executionTimeoutMs() const;
+  int compilationTimeoutMs() const;
+  ExecutionState executionState() const;
   int rowCount(const QModelIndex& index) const override;
   RunningMode runningMode() const;
   void saveTabAt(qsizetype index);
@@ -173,8 +183,6 @@ class EditorModel : public QAbstractListModel {
   void runScript();
   Q_INVOKABLE
   void runScriptInDebugMode();
-  Q_INVOKABLE
-  void stopExecution();
 
  public slots:
   void createTabFromFile(QSharedPointer<QFile> file, const QString& storedText);
@@ -192,6 +200,9 @@ class EditorModel : public QAbstractListModel {
                                                 const FileReadError& error);
   void displayFileReadFileDoesNotExistFailure(
       QSharedPointer<QFile> file, const FileDoesNotExistError& error);
+  void stopExecution();
+  void setExecutionTimeoutMs(int value);
+  void setCompilationTimeoutMs(int value);
 
  signals:
   void currentTabIndexChanged(int index);
@@ -201,6 +212,9 @@ class EditorModel : public QAbstractListModel {
   void virtualMachineServiceChanged();
   void mainTabIndexChanged(int index);
   void runningModeChanged(RunningMode runningMode);
+  void executionTimeoutMsChanged();
+  void compilationTimeoutMsChanged();
+  void executionStateChanged();
 
  protected slots:
   void updateMainTabIndex();
@@ -209,6 +223,7 @@ class EditorModel : public QAbstractListModel {
   void handleExecutionCompleted();
   void displayExecutionFailedForInternalReason();
   void updateRevision();
+  void handleVirtualMachineVariableStateChanged();
 
  private:
   int _mainTabIndex = -1;
@@ -222,7 +237,11 @@ class EditorModel : public QAbstractListModel {
   mutable QMutex _temporaryTabIndexesMutex;
   QMap<QSharedPointer<TabModel>, int> _temporaryTabIndexes;
   long long _currentRunRevision = 0;
-  RunningMode _runningMode = Idle;
+  RunningMode _runningMode = Default;
+  ExecutionState _executionState = ExecutionState::Idle;
+  QTimer _executionStateTimer;
+  int _compilationTimeoutMs = 5000;
+  int _executionTimeoutMs = 5000;
 
   QString tabNameAt(qsizetype index) const;
   QString storedTabTextAt(qsizetype index) const;
@@ -264,6 +283,10 @@ class EditorModel : public QAbstractListModel {
   bool setLineNumberAt(int index, int lineNumber);
   void updateCursorPositionFromLineNumberAt(int index);
   void updateLineNumberFromCursorPositionAt(int index);
+  void startExecutionStateTimer();
+  void setExecutionState(ExecutionState executionState);
+  void stopVirtualMachine();
+  void stopCompiler();
 };
 
 #endif

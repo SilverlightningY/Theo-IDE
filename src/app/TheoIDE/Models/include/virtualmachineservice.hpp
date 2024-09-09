@@ -28,7 +28,7 @@ class ActivationsAreEmptyError : public std::runtime_error {
  public:
   ActivationsAreEmptyError()
       : std::runtime_error("The activations vector of the vm is empty") {}
-  ~ActivationsAreEmptyError() {};
+  ~ActivationsAreEmptyError(){};
 };
 
 class VirtualMachineService : public QObject {
@@ -65,6 +65,9 @@ class VirtualMachineService : public QObject {
   void variablesStateChanged();
   void executionFailedForInternalReason();
 
+ protected slots:
+  void deinitVirtualMachine();
+
  private:
   QSharedPointer<Theo::VM> _virtualMachine;
   QMap<QString, QSet<int>> _breakPoints;
@@ -76,7 +79,6 @@ class VirtualMachineService : public QObject {
   void applyBreakPoints();
   void resetVirtualMachine();
   void startVirtualMachine();
-  void deinitVirtualMachine();
   bool programEndReached() const;
   void cleanUpIfEndReached();
   QFuture<VMData> executeAsync();

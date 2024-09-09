@@ -1,12 +1,9 @@
-#include <qabstractitemmodel.h>
-#include <qnamespace.h>
-#include <qvariant.h>
+#include "variablesstatemodel.hpp"
 
+#include <QtGlobal>
 #include <algorithm>
-#include <cstddef>
 #include <iterator>
 
-#include "variablesstatemodel.hpp"
 #include "virtualmachineservice.hpp"
 
 VariablesStateModel::VariablesStateModel(QObject* parent)
@@ -61,6 +58,10 @@ bool VariablesStateModel::setData(const QModelIndex& index,
   return false;
 }
 
+VirtualMachineService* VariablesStateModel::virtualMachineService() const {
+  return _virtualMachineService.data();
+}
+
 void VariablesStateModel::setVirtualMachineService(
     VirtualMachineService* virtualMachineService) {
   if (_virtualMachineService != virtualMachineService) {
@@ -74,6 +75,7 @@ void VariablesStateModel::setVirtualMachineService(
 void VariablesStateModel::setVariableNameColumnWidth(int value) {
   if (_variableNameColumnWidth != value) {
     _variableNameColumnWidth = value;
+    emit variableNameColumnWidthChanged();
     if (_variables.empty()) {
       return;
     }
@@ -86,6 +88,7 @@ void VariablesStateModel::setVariableNameColumnWidth(int value) {
 void VariablesStateModel::setVariableValueColumnWidth(int value) {
   if (_variableValueColumnWidth != value) {
     _variableValueColumnWidth = value;
+    emit variableValueColumnWidthChanged();
     if (_variables.empty()) {
       return;
     }
@@ -96,24 +99,34 @@ void VariablesStateModel::setVariableValueColumnWidth(int value) {
 }
 
 void VariablesStateModel::updateVariableNameColumnWidth() {
-  if (_variableNameColumnImplicitWidths.empty()) {
+  if (_variables.empty()) {
+    setVariableNameColumnWidth(_variableNameHeaderImplicitWidth);
     return;
   }
-  const auto maxWidthIterator =
-      std::max_element(_variableNameColumnImplicitWidths.begin(),
-                       _variableNameColumnImplicitWidths.end());
-  const int maxWidth = *maxWidthIterator;
+  const auto maxWidthIterator = std::max_element(
+      _variables.begin(), _variables.end(),
+      [](const VariableState& v1, const VariableState& v2) -> bool {
+        return v1.nameColumnImplicitWidth < v2.nameColumnImplicitWidth;
+      });
+  const VariableState& variableStateMaxWidth = *maxWidthIterator;
+  const int maxWidth = qMax(variableStateMaxWidth.nameColumnImplicitWidth,
+                            _variableNameHeaderImplicitWidth);
   setVariableNameColumnWidth(maxWidth);
 }
 
 void VariablesStateModel::updateVariableValueColumnWidth() {
-  if (_variableValueColumnImplicitWidths.empty()) {
+  if (_variables.empty()) {
+    setVariableValueColumnWidth(_variableValueHeaderImplicitWidth);
     return;
   }
-  const auto maxWidthIterator =
-      std::max_element(_variableValueColumnImplicitWidths.begin(),
-                       _variableValueColumnImplicitWidths.end());
-  const int maxWidth = *maxWidthIterator;
+  const auto maxWidthIterator = std::max_element(
+      _variables.begin(), _variables.end(),
+      [](const VariableState& v1, const VariableState& v2) -> bool {
+        return v1.valueColumnImplicitWidth < v2.valueColumnImplicitWidth;
+      });
+  const VariableState& variableStateMaxWidth = *maxWidthIterator;
+  const int maxWidth = qMax(variableStateMaxWidth.valueColumnImplicitWidth,
+                            _variableValueHeaderImplicitWidth);
   setVariableValueColumnWidth(maxWidth);
 }
 
@@ -122,27 +135,40 @@ void VariablesStateModel::updateVariablesState() {
     return;
   }
   const auto variablesState(_virtualMachineService->variablesState());
+  QList<VariableState> variablesToAppend;
+  QList<VariableState>::iterator variablesIterator = _variables.begin();
+  const int numberOfItemsToUpdate =
+      qMin(variablesState.size(), _variables.size());
   for (const QString& variableName : variablesState.keys()) {
-    const auto element =
-        std::find_if(_variables.begin(), _variables.end(),
-                     [variableName](const VariableState& state) -> bool {
-                       return state.name == variableName;
-                     });
-    const bool elementFound = element < _variables.end();
-    if (elementFound) {
-      const std::ptrdiff_t index(std::distance(_variables.begin(), element));
-      setValueAt(index, variablesState[variableName]);
-    } else {
-      appendVariableState(
+    if (variablesIterator == _variables.end()) {
+      variablesToAppend.append(
           VariableState(variableName, variablesState[variableName]));
+      continue;
     }
+    VariableState& currentVariableState = *variablesIterator;
+    currentVariableState.name = variableName;
+    currentVariableState.value = variablesState[variableName];
+    ++variablesIterator;
   }
-  for (auto iterator = _variables.begin(); iterator != _variables.end();
-       ++iterator) {
-    if (!variablesState.contains(iterator->name)) {
-      std::ptrdiff_t index(std::distance(_variables.begin(), iterator));
-      removeVariableStateAt(index);
-    }
+  if (numberOfItemsToUpdate > 0) {
+    const QModelIndex first(createIndex(0, 0));
+    const QModelIndex last(createIndex(numberOfItemsToUpdate - 1, 0));
+    emit dataChanged(first, last,
+                     {VariableNameRole, VariableValueRole, Qt::DisplayRole});
+  }
+  if (!variablesToAppend.isEmpty()) {
+    const int first = _variables.size();
+    const int last = first + variablesToAppend.size() - 1;
+    beginInsertRows(QModelIndex(), first, last);
+    _variables.append(variablesToAppend);
+    endInsertRows();
+  }
+  if (variablesState.size() < _variables.size()) {
+    const int first = variablesState.size();
+    const int last = _variables.size() - 1;
+    beginRemoveRows(QModelIndex(), first, last);
+    _variables.remove(first, last - first + 1);
+    endRemoveRows();
   }
 }
 
@@ -178,9 +204,12 @@ int VariablesStateModel::variableValueColumnWidth() const {
 
 bool VariablesStateModel::setVariableNameColumnImplicitWidthVariant(
     int index, const QVariant& value) {
+  if (indexOutOfRange(index)) {
+    return false;
+  }
   if (value.isValid() && value.canConvert<int>()) {
     const int width = value.toInt();
-    _variableNameColumnImplicitWidths[index] = width;
+    _variables[index].nameColumnImplicitWidth = width;
     updateVariableNameColumnWidth();
     return true;
   }
@@ -189,9 +218,12 @@ bool VariablesStateModel::setVariableNameColumnImplicitWidthVariant(
 
 bool VariablesStateModel::setVariableValueColumnImplicitWidthVariant(
     int index, const QVariant& value) {
+  if (indexOutOfRange(index)) {
+    return false;
+  }
   if (value.isValid() && value.canConvert<int>()) {
     const int width = value.toInt();
-    _variableValueColumnImplicitWidths[index] = width;
+    _variables[index].valueColumnImplicitWidth = width;
     updateVariableValueColumnWidth();
     return true;
   }
@@ -207,11 +239,24 @@ void VariablesStateModel::setValueAt(int index, int value) {
     return;
   }
   _variables[index].value = value;
-  qDebug() << "Assigned value" << value << "actually has value"
-           << _variables.at(index).value;
   const QModelIndex modelIndex = createIndex(index, 0);
   emit dataChanged(modelIndex, modelIndex,
                    {VariableValueRole, Qt::DisplayRole});
+}
+
+void VariablesStateModel::setValueAt(QList<VariableState>::iterator iterator,
+                                     int value) {
+  const auto index(std::distance(_variables.begin(), iterator));
+  setValueAt(index, value);
+}
+
+QList<VariableState>::iterator VariablesStateModel::insertVariableStateAt(
+    QList<VariableState>::iterator iterator, const VariableState& value) {
+  const auto index(std::distance(_variables.begin(), iterator));
+  beginInsertRows(QModelIndex(), index, index);
+  const auto returnValue = _variables.insert(iterator, value);
+  return returnValue;
+  endInsertRows();
 }
 
 void VariablesStateModel::appendVariableState(const VariableState& state) {
@@ -244,4 +289,18 @@ void VariablesStateModel::disconnectVirtualMachineService() {
   }
   disconnect(_virtualMachineService, nullptr, this, nullptr);
   disconnect(this, nullptr, _virtualMachineService, nullptr);
+}
+
+void VariablesStateModel::setVariableNameHeaderImplicitWidth(int width) {
+  if (_variableNameHeaderImplicitWidth != width) {
+    _variableNameHeaderImplicitWidth = width;
+    updateVariableNameColumnWidth();
+  }
+}
+
+void VariablesStateModel::setVariableValueHeaderImplicitWidth(int width) {
+  if (_variableValueHeaderImplicitWidth != width) {
+    _variableValueHeaderImplicitWidth = width;
+    updateVariableValueColumnWidth();
+  }
 }

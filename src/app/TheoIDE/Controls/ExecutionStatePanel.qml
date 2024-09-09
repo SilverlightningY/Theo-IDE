@@ -14,12 +14,12 @@ Item {
     states: [
         State {
             name: "debugging"
-            when: root.model.runningMode === EditorModel.Debugging
+            when: root.model.executionState !== ExecutionState.Idle && root.model.runningMode === EditorModel.Debug
             extend: "running"
         },
         State {
             name: "running"
-            when: root.model.runningMode !== EditorModel.Idle
+            when: root.model.executionState !== ExecutionState.Idle && root.model.runningMode === EditorModel.Default
             PropertyChanges {
                 mainTabComboBox {
                     enabled: false
@@ -140,10 +140,20 @@ Item {
             LabeledControl {
                 width: parent.contentWidth
                 text: qsTr("Output")
-                ResultTable {
+                Flickable {
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    height: implicitHeight
+                    height: resultTable.height
+                    contentWidth: resultTable.implicitWidth
+                    clip: true
+                    ResultTable {
+                        id: resultTable
+                        anchors.right: parent.right
+                        height: implicitHeight
+                        model: VariablesStateModel {
+                            virtualMachineService: root.model.virtualMachineService
+                        }
+                    }
                 }
             }
         }

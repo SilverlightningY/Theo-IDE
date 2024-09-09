@@ -18,7 +18,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         height: parent.currentItem ? parent.currentItem.height : 0
-        y: parent.currentItem ? parent.currentItem.y + parent.innerMargin : 0
+        y: lineInfoColumn.currentItem ? lineInfoColumn.currentItem.y - lineInfoColumn.contentY : 0
         z: 0
     }
 

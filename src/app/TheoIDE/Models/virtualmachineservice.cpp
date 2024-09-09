@@ -1,9 +1,9 @@
+#include "virtualmachineservice.hpp"
+
 #include <QFutureWatcher>
 #include <QtConcurrentRun>
 #include <QtLogging>
 #include <exception>
-
-#include "virtualmachineservice.hpp"
 
 VirtualMachineService::VirtualMachineService(QObject* parent)
     : QObject(parent) {}
@@ -85,6 +85,8 @@ void VirtualMachineService::startVirtualMachine() {
   };
   connect(watcher, &QFutureWatcher<void>::finished, deleteWatcher);
   connect(watcher, &QFutureWatcher<void>::canceled, deleteWatcher);
+  connect(watcher, &QFutureWatcher<void>::canceled, this,
+          &VirtualMachineService::deinitVirtualMachine);
   connect(this, &VirtualMachineService::stopCalled, watcher,
           &QFutureWatcher<void>::cancel);
   const QFuture future =
@@ -126,6 +128,10 @@ void VirtualMachineService::handleActivationsAreEmptyError(
   deinitVirtualMachine();
   qCritical() << "Execution failed because activations are empty";
   emit executionFailedForInternalReason();
+}
+
+QMap<QString, int> VirtualMachineService::variablesState() const {
+  return _variablesState;
 }
 
 void VirtualMachineService::setVariablesState(VMData data) {

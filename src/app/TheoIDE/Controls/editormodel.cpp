@@ -1,11 +1,15 @@
+#include "editormodel.hpp"
+
 #include <QTextBlock>
 #include <QtGlobal>
 #include <QtLogging>
 #include <algorithm>
+#include <chrono>
 #include <functional>
 #include <ranges>
 
-#include "editormodel.hpp"
+#include "executionstate.hpp"
+#include "virtualmachineservice.hpp"
 
 EditorModel::EditorModel(QObject* parent) : QAbstractListModel(parent) {
   connect(this, &QAbstractListModel::rowsInserted, this,
@@ -14,6 +18,12 @@ EditorModel::EditorModel(QObject* parent) : QAbstractListModel(parent) {
           &EditorModel::updateMainTabIndex);
   connect(this, &EditorModel::mainTabIndexChanged, this,
           &EditorModel::updateAllTabNames);
+  _executionStateTimer.setSingleShot(true);
+  _executionStateTimer.setInterval(std::chrono::seconds(5));
+  connect(&_executionStateTimer, &QTimer::timeout, this,
+          &EditorModel::stopExecution);
+  connect(this, &EditorModel::executionStateChanged, &_executionStateTimer,
+          &QTimer::stop);
 }
 EditorModel::~EditorModel() {}
 
@@ -63,7 +73,7 @@ QVariant EditorModel::data(const QModelIndex& index, int role) const {
 
 bool EditorModel::isTabReadOnlyAt(qsizetype index) const {
   Q_UNUSED(index)
-  return _runningMode != Idle;
+  return _executionState != ExecutionState::Idle;
 }
 
 QString EditorModel::storedTabTextAt(qsizetype index) const {
@@ -241,6 +251,9 @@ void EditorModel::saveTabAt(qsizetype index) {
 }
 
 void EditorModel::saveTab(QSharedPointer<TabModel> tab) {
+  if (tab.isNull()) {
+    return;
+  }
   qDebug() << "save tab not implemented:" << tab->name();
 }
 
@@ -256,26 +269,51 @@ void EditorModel::createNewTab() {
 }
 
 void EditorModel::runScript() {
-  setRunningMode(Running);
+  setRunningMode(Default);
   const bool compilationTaskPushed = tryPushCompilationTask();
   if (!compilationTaskPushed) {
-    setRunningMode(Idle);
+    setExecutionState(ExecutionState::Idle);
   }
 }
 
 void EditorModel::runScriptInDebugMode() {
-  setRunningMode(Debugging);
+  setRunningMode(Debug);
   const bool compilationTaskPushed = tryPushCompilationTask();
   if (!compilationTaskPushed) {
-    setRunningMode(Idle);
+    setExecutionState(ExecutionState::Idle);
   }
 }
 
 void EditorModel::stopExecution() {
+  if (_executionState == ExecutionState::Idle) {
+    return;
+  }
+  switch (_executionState) {
+    case ExecutionState::Compiling:
+      stopCompiler();
+      break;
+    case ExecutionState::Halt:
+    case ExecutionState::Executing:
+      stopVirtualMachine();
+      break;
+    default:
+      break;
+  }
+}
+
+void EditorModel::stopVirtualMachine() {
   if (_virtualMachineService.isNull()) {
     return;
   }
   _virtualMachineService->stopExecution();
+}
+
+void EditorModel::stopCompiler() {
+  if (_compilerService.isNull()) {
+    return;
+  }
+  // TODO stop compilation
+  _compilerService->reset();
 }
 
 bool EditorModel::compilationPreconditionsFulfilled() const {
@@ -302,6 +340,8 @@ bool EditorModel::tryPushCompilationTask() {
   try {
     const CompilationTask task = createCompilationTaskFromTabContent();
     _currentRunRevision = task.revision();
+    setExecutionState(ExecutionState::Compiling);
+    startExecutionStateTimer();
     _compilerService->compile(task);
   } catch (const NoMainTabError& error) {
     if (_dialogService) {
@@ -619,13 +659,12 @@ void EditorModel::handleCompilationRevisionAvailable(int revision) {
   }
   const auto compilationResult = latestCompilationResult();
   if (compilationResult.isNull()) {
-    setRunningMode(Idle);
+    setExecutionState(ExecutionState::Idle);
     return;
   }
-  qDebug() << "Compilation result received" << compilationResult->revision();
   const Theo::CodegenResult result = compilationResult->result();
   if (!result.generated_correctly) {
-    setRunningMode(Idle);
+    setExecutionState(ExecutionState::Idle);
     if (_dialogService.isNull()) {
       qCritical() << "Tried to inform the user that the compilation failed, "
                      "but the dialog service is null";
@@ -639,19 +678,21 @@ void EditorModel::handleCompilationRevisionAvailable(int revision) {
 
 void EditorModel::startVirtualMachine(const Theo::Program& program) {
   if (_virtualMachineService.isNull()) {
-    setRunningMode(Idle);
+    setExecutionState(ExecutionState::Idle);
     qCritical() << "Tried to start vm, but virtual machine service is null";
     return;
   }
+  setExecutionState(ExecutionState::Executing);
+  startExecutionStateTimer();
   switch (_runningMode) {
-    case Debugging:
+    case Debug:
       _virtualMachineService->debug(program);
       return;
-    case Running:
+    case Default:
       _virtualMachineService->execute(program);
       return;
     default:
-      break;
+      return;
   }
 }
 
@@ -662,8 +703,10 @@ VirtualMachineService* EditorModel::virtualMachineService() const {
 void EditorModel::setVirtualMachineService(
     VirtualMachineService* virtualMachineService) {
   if (_virtualMachineService != virtualMachineService) {
+    disconnectVirtualMachineService();
     _virtualMachineService = QPointer(virtualMachineService);
     emit virtualMachineServiceChanged();
+    connectVirtualMachineService();
   }
 }
 
@@ -671,6 +714,8 @@ void EditorModel::connectVirtualMachineService() {
   if (_virtualMachineService.isNull()) {
     return;
   }
+  connect(_virtualMachineService, &VirtualMachineService::variablesStateChanged,
+          this, &EditorModel::handleVirtualMachineVariableStateChanged);
   connect(_virtualMachineService,
           &VirtualMachineService::executionFailedForInternalReason, this,
           &EditorModel::displayExecutionFailedForInternalReason);
@@ -700,7 +745,7 @@ void EditorModel::disconnectVirtualMachineService() {
 
 void EditorModel::handleExecutionCompleted() {
   qInfo() << "Execution completed";
-  setRunningMode(Idle);
+  setExecutionState(ExecutionState::Idle);
 }
 
 void EditorModel::setRunningMode(RunningMode runningMode) {
@@ -851,3 +896,51 @@ bool EditorModel::setLineNumberAt(int index, int lineNumber) {
   emit dataChanged(modelIndex, modelIndex, {CursorLineNumberRole});
   return true;
 }
+
+void EditorModel::startExecutionStateTimer() {
+  switch (_executionState) {
+    case ExecutionState::Compiling:
+      _executionStateTimer.setInterval(_compilationTimeoutMs);
+      break;
+    case ExecutionState::Executing:
+      _executionStateTimer.setInterval(_executionTimeoutMs);
+      break;
+    default:
+      return;
+  }
+  _executionStateTimer.setSingleShot(true);
+  _executionStateTimer.start();
+}
+
+int EditorModel::executionTimeoutMs() const { return _executionTimeoutMs; }
+
+void EditorModel::setExecutionTimeoutMs(int value) {
+  if (_executionTimeoutMs != value) {
+    _executionTimeoutMs = value;
+    emit executionTimeoutMsChanged();
+  }
+}
+
+int EditorModel::compilationTimeoutMs() const { return _compilationTimeoutMs; }
+
+void EditorModel::setCompilationTimeoutMs(int value) {
+  if (_compilationTimeoutMs != value) {
+    _compilationTimeoutMs = value;
+    emit compilationTimeoutMsChanged();
+  }
+}
+
+void EditorModel::setExecutionState(ExecutionState executionState) {
+  if (_executionState != executionState) {
+    _executionState = executionState;
+    emit executionStateChanged();
+  }
+}
+
+void EditorModel::handleVirtualMachineVariableStateChanged() {
+  if (_executionState == ExecutionState::Executing) {
+    setExecutionState(ExecutionState::Halt);
+  }
+}
+
+ExecutionState EditorModel::executionState() const { return _executionState; }
