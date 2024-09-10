@@ -1,3 +1,7 @@
+#include "editormodel.hpp"
+
+#include <qtpreprocessorsupport.h>
+
 #include <QTextBlock>
 #include <QtGlobal>
 #include <QtLogging>
@@ -6,7 +10,6 @@
 #include <functional>
 #include <ranges>
 
-#include "editormodel.hpp"
 #include "executionstate.hpp"
 #include "virtualmachineservice.hpp"
 
@@ -44,6 +47,7 @@ QHash<int, QByteArray> EditorModel::roleNames() const {
 }
 
 int EditorModel::rowCount(const QModelIndex& index) const {
+  Q_UNUSED(index)
   return _tabs.count();
 }
 
@@ -559,6 +563,7 @@ void EditorModel::displayFileReadMaxReadFileSizeExceededFailure(
 
 void EditorModel::displayFileReadFailure(QSharedPointer<QFile> file,
                                          const FileError& error) {
+  Q_UNUSED(file)
   if (_dialogService.isNull()) {
     qCritical() << "An error occured but the dialog service was null:"
                 << error.what();

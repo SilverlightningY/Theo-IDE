@@ -51,17 +51,17 @@ class MainTabInvalidStateError : public std::runtime_error {
 class TabModel {
  public:
   TabModel(const QString& name, FileOptional file, const QString& storedText)
-      : _file(file),
+      : _textDocument(nullptr),
+        _file(file),
         _name(name),
-        _storedText(storedText),
-        _textDocument(nullptr) {}
+        _storedText(storedText) {}
   TabModel(const QString& name) : TabModel(name, std::nullopt, QString()) {}
   TabModel(const TabModel& tabModel)
-      : _file(tabModel._file),
+      : _textDocument(tabModel._textDocument),
+        _file(tabModel._file),
         _name(tabModel._name),
         _storedText(tabModel._storedText),
-        _activeBreakPoints(tabModel._activeBreakPoints),
-        _textDocument(tabModel._textDocument) {}
+        _activeBreakPoints(tabModel._activeBreakPoints) {}
 
   QString name() const { return _name; }
   QString displayName() const {

@@ -15,8 +15,8 @@ class CompilationTask {
  public:
   CompilationTask(const int revision, const QMap<QString, QString> content,
                   const QString& mainTabName)
-      : _revision(revision), _content(content), _mainTabName(mainTabName) {}
-  const int revision() const { return _revision; }
+      : _mainTabName(mainTabName), _revision(revision), _content(content) {}
+  int revision() const { return _revision; }
   QMap<QString, QString> content() const { return _content; }
   QString mainTabName() const { return _mainTabName; }
 
@@ -30,7 +30,7 @@ class CompilationResult {
  public:
   CompilationResult(const int revision, const Theo::CodegenResult& result)
       : _revision(revision), _result(result) {}
-  const int revision() const { return _revision; }
+  int revision() const { return _revision; }
   Theo::CodegenResult result() const { return _result; }
 
  private:

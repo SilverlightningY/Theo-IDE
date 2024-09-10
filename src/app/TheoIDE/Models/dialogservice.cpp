@@ -1,8 +1,11 @@
+#include "dialogservice.hpp"
+
+#include <qtpreprocessorsupport.h>
+
 #include <QtLogging>
 #include <optional>
 
 #include "dialogbutton.hpp"
-#include "dialogservice.hpp"
 
 DialogService::DialogService(QObject* parent) : QObject(parent) {}
 DialogService::~DialogService() {}
@@ -33,6 +36,7 @@ std::optional<QSharedPointer<MessageDialogDTO>> DialogService::remove() {
 }
 
 void DialogService::addReadPermissionDenied(const QString& fileName) {
+  Q_UNUSED(fileName)
   const QString title = tr("Permission denied");
   const QString text = tr("File can not be read");
   const QString detailedText = tr("Read permission denied.");

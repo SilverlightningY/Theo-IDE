@@ -1,8 +1,11 @@
+#include "variablesstatemodel.hpp"
+
+#include <qtpreprocessorsupport.h>
+
 #include <QtGlobal>
 #include <algorithm>
 #include <iterator>
 
-#include "variablesstatemodel.hpp"
 #include "virtualmachineservice.hpp"
 
 VariablesStateModel::VariablesStateModel(QObject* parent)
@@ -11,6 +14,7 @@ VariablesStateModel::VariablesStateModel(QObject* parent)
 VariablesStateModel::~VariablesStateModel() {}
 
 int VariablesStateModel::rowCount(const QModelIndex& parent) const {
+  Q_UNUSED(parent)
   if (_virtualMachineService.isNull()) {
     return 0;
   }

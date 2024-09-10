@@ -1,9 +1,11 @@
+#include "virtualmachineservice.hpp"
+
+#include <qtpreprocessorsupport.h>
+
 #include <QFutureWatcher>
 #include <QtConcurrentRun>
 #include <QtLogging>
 #include <exception>
-
-#include "virtualmachineservice.hpp"
 
 VirtualMachineService::VirtualMachineService(QObject* parent)
     : QObject(parent) {}
@@ -118,6 +120,7 @@ void VirtualMachineService::handleExecutionError(const std::exception& error) {
 
 void VirtualMachineService::handleVirtualMachineIsNullError(
     const VirtualMachineIsNullError& error) {
+  Q_UNUSED(error)
   deinitVirtualMachine();
   qCritical() << "Execution failed because virtual machine is null";
   emit executionFailedForInternalReason();
@@ -125,6 +128,7 @@ void VirtualMachineService::handleVirtualMachineIsNullError(
 
 void VirtualMachineService::handleActivationsAreEmptyError(
     const ActivationsAreEmptyError& error) {
+  Q_UNUSED(error)
   deinitVirtualMachine();
   qCritical() << "Execution failed because activations are empty";
   emit executionFailedForInternalReason();
@@ -136,11 +140,8 @@ QMap<QString, int> VirtualMachineService::variablesState() const {
 
 void VirtualMachineService::setVariablesState(VMData data) {
   QMap<QString, int> variablesState;
-  auto insertPosition = variablesState.begin();
   for (auto line : data) {
-    variablesState.insert(insertPosition, QString::fromStdString(line.first),
-                          line.second);
-    ++insertPosition;
+    variablesState.insert(QString::fromStdString(line.first), line.second);
   }
   setVariablesState(variablesState);
 }

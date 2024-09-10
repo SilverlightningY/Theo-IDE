@@ -1,11 +1,12 @@
-#include "dialogbutton.hpp"
 #include "messagedialogdto.hpp"
+
+#include "dialogbutton.hpp"
 
 MessageDialogDTO::MessageDialogDTO(const QString& title, const QString& text,
                                    DialogModelText detailedText,
                                    DialogModelText informativeText)
-    : _title(title),
-      _text(text),
+    : _text(text),
+      _title(title),
       _detailedText(detailedText),
       _informativeText(informativeText) {}
 
