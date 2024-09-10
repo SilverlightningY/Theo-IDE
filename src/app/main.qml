@@ -36,6 +36,7 @@ ApplicationWindow {
         blockSizeBytes: ApplicationSettings.blockSizeBytes
     }
     property CompilerService compilerService: CompilerService {}
+    property VirtualMachineService virtualMachineService: VirtualMachineService {}
 
     ApplicationMessageDialog {
         model: MessageDialogModel {
@@ -53,6 +54,9 @@ ApplicationWindow {
                 fileSystemService: root.fileSystemService
                 dialogService: root.dialogService
                 compilerService: root.compilerService
+                virtualMachineService: root.virtualMachineService
+                compilationTimeoutMs: ApplicationSettings.compilationTimeoutMs
+                executionTimeoutMs: ApplicationSettings.executionTimeoutMs
             }
         }
     }

@@ -27,6 +27,7 @@ ScrollView {
             anchors.fill: parent
             wrapMode: TextEdit.NoWrap
             color: ApplicationSettings.foreground
+            selectionColor: ApplicationSettings.accent
             font {
                 family: ApplicationSettings.editorFontFamily
                 pointSize: ApplicationSettings.editorFontSize

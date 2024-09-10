@@ -1,7 +1,3 @@
-#include <qjsvalue.h>
-#include <qlogging.h>
-#include <qvariant.h>
-
 #include <algorithm>
 
 #include "messagedialogmodel.hpp"

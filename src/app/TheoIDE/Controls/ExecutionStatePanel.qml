@@ -11,6 +11,23 @@ Item {
     property alias implicitWidth: debugControls.implicitWidth
     required property EditorModel model
 
+    states: [
+        State {
+            name: "debugging"
+            when: root.model.executionState !== ExecutionState.Idle && root.model.runningMode === EditorModel.Debug
+            extend: "running"
+        },
+        State {
+            name: "running"
+            when: root.model.executionState !== ExecutionState.Idle && root.model.runningMode === EditorModel.Default
+            PropertyChanges {
+                mainTabComboBox {
+                    enabled: false
+                }
+            }
+        }
+    ]
+
     Column {
         id: debugControlsContainer
         anchors.left: parent.left
@@ -104,7 +121,7 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     textRole: "tabName"
-                    enabled: !root.model.isRunning && count > 0
+                    enabled: count > 0
 
                     function updateMainTabIndex(index: int): void {
                         root.model.mainTabIndex = index;
@@ -123,10 +140,20 @@ Item {
             LabeledControl {
                 width: parent.contentWidth
                 text: qsTr("Output")
-                ResultTable {
+                Flickable {
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    height: implicitHeight
+                    height: resultTable.height
+                    contentWidth: resultTable.implicitWidth
+                    clip: true
+                    ResultTable {
+                        id: resultTable
+                        anchors.right: parent.right
+                        height: implicitHeight
+                        model: VariablesStateModel {
+                            virtualMachineService: root.model.virtualMachineService
+                        }
+                    }
                 }
             }
         }

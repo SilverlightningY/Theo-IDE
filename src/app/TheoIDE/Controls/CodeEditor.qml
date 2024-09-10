@@ -47,10 +47,12 @@ Item {
             model: root.model
             delegate: ClosableTabButton {
                 required property string displayTabName
+                required property bool isReadOnly
                 required property var model
                 onCloseTriggered: model.open = false
                 text: displayTabName
                 width: implicitWidth
+                closeEnabled: !isReadOnly
             }
         }
     }
@@ -78,8 +80,18 @@ Item {
             delegate: TabContent {
                 required property string storedTabText
                 required property var model
+                required property int cursorPosition
+                required property int cursorLineNumber
+                currentCursorPosition: cursorPosition
+                onCurrentCursorPositionChanged: {
+                    model.cursorPositionEdit = currentCursorPosition;
+                }
+                currentLineNumber: cursorLineNumber
                 text: storedTabText
-                Component.onCompleted: model.textDocument = textDocument
+                Component.onCompleted: {
+                    model.textDocument = textDocument;
+                    model.cursorPositionEdit = currentCursorPosition;
+                }
             }
         }
     }

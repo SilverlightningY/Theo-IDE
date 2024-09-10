@@ -4,8 +4,8 @@
 MessageDialogDTO::MessageDialogDTO(const QString& title, const QString& text,
                                    DialogModelText detailedText,
                                    DialogModelText informativeText)
-    : _title(title),
-      _text(text),
+    : _text(text),
+      _title(title),
       _detailedText(detailedText),
       _informativeText(informativeText) {}
 
@@ -41,4 +41,17 @@ void MessageDialogDTO::runCallbackFor(DialogButton button) const {
 
 QList<DialogButton> MessageDialogDTO::activeDialogButtons() const {
   return _buttonCallbacks.keys();
+}
+
+void MessageDialogDTO::setButtonWithMainCallback(DialogButton button,
+                                                 DialogModelCallback callback) {
+  _mainActionButton = button;
+  setButtonWithCallback(button, callback);
+}
+
+void MessageDialogDTO::runMainCallback() const {
+  if (_mainActionButton.has_value() &&
+      hasCallbackFor(_mainActionButton.value())) {
+    runCallbackFor(_mainActionButton.value());
+  }
 }

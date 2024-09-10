@@ -1,35 +1,16 @@
-#include "editormodel.hpp"
-
-#include <qabstractitemmodel.h>
-#include <qalgorithms.h>
-#include <qcontainerfwd.h>
-#include <qdir.h>
-#include <qfileinfo.h>
-#include <qfuturewatcher.h>
-#include <qhash.h>
-#include <qlogging.h>
-#include <qmutex.h>
-#include <qnamespace.h>
-#include <qpointer.h>
-#include <qquicktextdocument.h>
-#include <qscopedpointer.h>
-#include <qsharedpointer.h>
-#include <qstringview.h>
 #include <qtpreprocessorsupport.h>
-#include <qttranslation.h>
-#include <qtypes.h>
-#include <qurl.h>
-#include <qvariant.h>
 
+#include <QTextBlock>
+#include <QtGlobal>
+#include <QtLogging>
 #include <algorithm>
+#include <chrono>
 #include <functional>
-#include <optional>
 #include <ranges>
 
-#include "compilerservice.hpp"
-#include "dialogservice.hpp"
-#include "filesystemservice.hpp"
-#include "gen.hpp"
+#include "editormodel.hpp"
+#include "executionstate.hpp"
+#include "virtualmachineservice.hpp"
 
 EditorModel::EditorModel(QObject* parent) : QAbstractListModel(parent) {
   connect(this, &QAbstractListModel::rowsInserted, this,
@@ -38,22 +19,34 @@ EditorModel::EditorModel(QObject* parent) : QAbstractListModel(parent) {
           &EditorModel::updateMainTabIndex);
   connect(this, &EditorModel::mainTabIndexChanged, this,
           &EditorModel::updateAllTabNames);
+  _executionStateTimer.setSingleShot(true);
+  _executionStateTimer.setInterval(std::chrono::seconds(5));
+  connect(&_executionStateTimer, &QTimer::timeout, this,
+          &EditorModel::stopExecution);
+  connect(this, &EditorModel::executionStateChanged, &_executionStateTimer,
+          &QTimer::stop);
 }
 EditorModel::~EditorModel() {}
 
 QHash<int, QByteArray> EditorModel::roleNames() const {
-  return QHash<int, QByteArray>{{Qt::DisplayRole, "display"},
-                                {StoredTabTextRole, "storedTabText"},
-                                {TabNameRole, "tabName"},
-                                {DisplayTabNameRole, "displayTabName"},
-                                {IsModifiedRole, "isModified"},
-                                {IsTemporaryRole, "isTemporary"},
-                                {TextDocumentRole, "textDocument"},
-                                {OpenRole, "open"},
-                                {IsReadOnlyRole, "isReadOnly"}};
+  return QHash<int, QByteArray>{
+      {Qt::DisplayRole, "display"},
+      {StoredTabTextRole, "storedTabText"},
+      {TabNameRole, "tabName"},
+      {DisplayTabNameRole, "displayTabName"},
+      {IsModifiedRole, "isModified"},
+      {IsTemporaryRole, "isTemporary"},
+      {TextDocumentRole, "textDocument"},
+      {OpenRole, "open"},
+      {IsReadOnlyRole, "isReadOnly"},
+      {BackgroundCompilationTimerRole, "backgroundCompilationTimer"},
+      {CursorPositionRole, "cursorPosition"},
+      {CursorPositionEditRole, "cursorPositionEdit"},
+      {CursorLineNumberRole, "cursorLineNumber"}};
 }
 
 int EditorModel::rowCount(const QModelIndex& index) const {
+  Q_UNUSED(index)
   return _tabs.count();
 }
 
@@ -72,13 +65,17 @@ QVariant EditorModel::data(const QModelIndex& index, int role) const {
       return isTabTemporaryAt(index.row());
     case IsReadOnlyRole:
       return isTabReadOnlyAt(index.row());
+    case CursorPositionRole:
+      return cursorPositionAt(index.row());
+    case CursorLineNumberRole:
+      return cursorLineNumberAt(index.row());
   }
   return QVariant();
 }
 
 bool EditorModel::isTabReadOnlyAt(qsizetype index) const {
   Q_UNUSED(index)
-  return isRunning();
+  return _executionState != ExecutionState::Idle;
 }
 
 QString EditorModel::storedTabTextAt(qsizetype index) const {
@@ -122,6 +119,10 @@ bool EditorModel::setData(const QModelIndex& index, const QVariant& data,
       return setTextDocumentVariantAt(index.row(), data);
     case OpenRole:
       return setOpenAt(index.row(), data);
+    case CursorPositionEditRole:
+      return setCursorPositionVariantAt(index.row(), data, role);
+    case CursorPositionRole:
+      return setCursorPositionVariantAt(index.row(), data, role);
   }
   return false;
 }
@@ -154,8 +155,9 @@ bool EditorModel::setTextDocumentVariantAt(qsizetype index,
     qCritical() << "Cast from QVariant to QQuickTextDocument* failed";
     return false;
   }
+  const QPointer<QTextDocument> textDocument(quickTextDocument->textDocument());
   auto tab = tabOptional.value();
-  tab->setTextDocument(quickTextDocument->textDocument());
+  tab->setTextDocument(textDocument);
   return true;
 }
 
@@ -251,7 +253,10 @@ void EditorModel::saveTabAt(qsizetype index) {
 }
 
 void EditorModel::saveTab(QSharedPointer<TabModel> tab) {
-  qDebug() << "save tab" << tab->name();
+  if (tab.isNull()) {
+    return;
+  }
+  qDebug() << "save tab not implemented:" << tab->name();
 }
 
 void EditorModel::createNewTab() {
@@ -265,21 +270,52 @@ void EditorModel::createNewTab() {
   emit endInsertRows();
 }
 
-bool EditorModel::isRunning() const { return _isRunning; }
-
-void EditorModel::setIsRunning(bool isRunning) {
-  if (_isRunning != isRunning) {
-    _isRunning = isRunning;
-    emit isRunningChanged(isRunning);
+void EditorModel::runScript() {
+  setRunningMode(Default);
+  const bool compilationTaskPushed = tryPushCompilationTask();
+  if (!compilationTaskPushed) {
+    setExecutionState(ExecutionState::Idle);
   }
 }
 
-void EditorModel::runScript() {
-  setIsRunning(true);
+void EditorModel::runScriptInDebugMode() {
+  setRunningMode(Debug);
   const bool compilationTaskPushed = tryPushCompilationTask();
   if (!compilationTaskPushed) {
-    setIsRunning(false);
+    setExecutionState(ExecutionState::Idle);
   }
+}
+
+void EditorModel::stopExecution() {
+  if (_executionState == ExecutionState::Idle) {
+    return;
+  }
+  switch (_executionState) {
+    case ExecutionState::Compiling:
+      stopCompiler();
+      break;
+    case ExecutionState::Halt:
+    case ExecutionState::Executing:
+      stopVirtualMachine();
+      break;
+    default:
+      break;
+  }
+}
+
+void EditorModel::stopVirtualMachine() {
+  if (_virtualMachineService.isNull()) {
+    return;
+  }
+  _virtualMachineService->stopExecution();
+}
+
+void EditorModel::stopCompiler() {
+  if (_compilerService.isNull()) {
+    return;
+  }
+  // TODO stop compilation
+  _compilerService->reset();
 }
 
 bool EditorModel::compilationPreconditionsFulfilled() const {
@@ -306,6 +342,8 @@ bool EditorModel::tryPushCompilationTask() {
   try {
     const CompilationTask task = createCompilationTaskFromTabContent();
     _currentRunRevision = task.revision();
+    setExecutionState(ExecutionState::Compiling);
+    startExecutionStateTimer();
     _compilerService->compile(task);
   } catch (const NoMainTabError& error) {
     if (_dialogService) {
@@ -369,8 +407,6 @@ CompilationTask EditorModel::createCompilationTaskFromTabContent() const {
   return CompilationTask(revision, content, mainTabName);
 }
 
-void EditorModel::runScriptInDebugMode() {}
-
 void EditorModel::closeTabAt(qsizetype index) {
   QMutexLocker locker(&_tabsMutex);
   TabModelOptional tab = tabAt(index);
@@ -391,10 +427,11 @@ void EditorModel::closeTabAt(qsizetype index) {
     removeTab();
     return;
   }
-#ifdef THEOIDE_MESSAGE_DIALOG_SUPPORTED
   if (_dialogService.isNull()) {
-    qCritical() << "Tried to close a modified tab, but the dialog service is "
-                   "null. Action aborted.";
+    qCritical()
+        << "Tried to ask the user if the unsaved changes should be saved "
+           "before closing the tab, but the dialog service is null.";
+    removeTab();
     return;
   }
   const std::function<void(void)> saveTab = [this, tabModel,
@@ -403,9 +440,6 @@ void EditorModel::closeTabAt(qsizetype index) {
     removeTab();
   };
   _dialogService->addUnsavedChangesInFile(tabModel->name(), saveTab, removeTab);
-#else
-  removeTab();
-#endif  // THEOIDE_MESSAGEDIALOG_SUPPORTED
 }
 
 TabModelOptional EditorModel::tabAt(qsizetype index) const {
@@ -528,7 +562,7 @@ void EditorModel::displayFileReadMaxReadFileSizeExceededFailure(
 
 void EditorModel::displayFileReadFailure(QSharedPointer<QFile> file,
                                          const FileError& error) {
-#ifdef THEOIDE_MESSAGE_DIALOG_SUPPORTED
+  Q_UNUSED(file)
   if (_dialogService.isNull()) {
     qCritical() << "An error occured but the dialog service was null:"
                 << error.what();
@@ -561,9 +595,6 @@ void EditorModel::displayFileReadFailure(QSharedPointer<QFile> file,
     _dialogService->addFileDoesNotExist(fileDoesNotExistError->fileName());
     return;
   }
-#else
-  qWarning() << "An error occured:" << error.what();
-#endif
 }
 
 void EditorModel::updateMainTabIndex() {
@@ -595,7 +626,7 @@ void EditorModel::connectCompilerService() {
     return;
   }
   connect(_compilerService, &CompilerService::atLeastRevisionAvailable, this,
-          &EditorModel::compilationRevisionAvailable);
+          &EditorModel::handleCompilationRevisionAvailable);
   connect(this, &EditorModel::rowsInserted, _compilerService,
           &CompilerService::reset);
   connect(this, &EditorModel::rowsRemoved, _compilerService,
@@ -612,26 +643,31 @@ void EditorModel::disconnectCompilerService() {
   disconnect(this, nullptr, _compilerService, nullptr);
 }
 
-void EditorModel::compilationRevisionAvailable(int revision) {
+QSharedPointer<CompilationResult> EditorModel::latestCompilationResult() const {
+  if (_compilerService.isNull()) {
+    qCritical() << "Tried to get the latest compilation result, but the "
+                   "compiler service is null";
+    return nullptr;
+  }
+  const auto result = _compilerService->result();
+  if (result.isNull()) {
+    qCritical() << "Compiler service has provided a null reference to result.";
+  }
+  return result;
+}
+
+void EditorModel::handleCompilationRevisionAvailable(int revision) {
   if (revision < _currentRunRevision) {
     return;
   }
-  if (_compilerService.isNull()) {
-    qCritical() << "Compilation revision received, but reference of compiler "
-                   "service is null";
-    setIsRunning(false);
-    return;
-  }
-  const auto compilationResult = _compilerService->result();
+  const auto compilationResult = latestCompilationResult();
   if (compilationResult.isNull()) {
-    qCritical() << "Compiler service has provided a null reference to result.";
-    setIsRunning(false);
+    setExecutionState(ExecutionState::Idle);
     return;
   }
-  qDebug() << "Compilation result received" << compilationResult->revision();
   const Theo::CodegenResult result = compilationResult->result();
   if (!result.generated_correctly) {
-    setIsRunning(false);
+    setExecutionState(ExecutionState::Idle);
     if (_dialogService.isNull()) {
       qCritical() << "Tried to inform the user that the compilation failed, "
                      "but the dialog service is null";
@@ -640,5 +676,274 @@ void EditorModel::compilationRevisionAvailable(int revision) {
     _dialogService->addCompilationFailed(result);
     return;
   }
-  setIsRunning(false);
+  startVirtualMachine(result.code);
 }
+
+void EditorModel::startVirtualMachine(const Theo::Program& program) {
+  if (_virtualMachineService.isNull()) {
+    setExecutionState(ExecutionState::Idle);
+    qCritical() << "Tried to start vm, but virtual machine service is null";
+    return;
+  }
+  setExecutionState(ExecutionState::Executing);
+  startExecutionStateTimer();
+  switch (_runningMode) {
+    case Debug:
+      _virtualMachineService->debug(program);
+      return;
+    case Default:
+      _virtualMachineService->execute(program);
+      return;
+    default:
+      return;
+  }
+}
+
+VirtualMachineService* EditorModel::virtualMachineService() const {
+  return _virtualMachineService.data();
+}
+
+void EditorModel::setVirtualMachineService(
+    VirtualMachineService* virtualMachineService) {
+  if (_virtualMachineService != virtualMachineService) {
+    disconnectVirtualMachineService();
+    _virtualMachineService = QPointer(virtualMachineService);
+    emit virtualMachineServiceChanged();
+    connectVirtualMachineService();
+  }
+}
+
+void EditorModel::connectVirtualMachineService() {
+  if (_virtualMachineService.isNull()) {
+    return;
+  }
+  connect(_virtualMachineService, &VirtualMachineService::variablesStateChanged,
+          this, &EditorModel::handleVirtualMachineVariableStateChanged);
+  connect(_virtualMachineService,
+          &VirtualMachineService::executionFailedForInternalReason, this,
+          &EditorModel::displayExecutionFailedForInternalReason);
+  connect(_virtualMachineService,
+          &VirtualMachineService::executionFailedForInternalReason, this,
+          &EditorModel::handleExecutionCompleted);
+  connect(_virtualMachineService, &VirtualMachineService::executionCompleted,
+          this, &EditorModel::handleExecutionCompleted);
+}
+
+void EditorModel::displayExecutionFailedForInternalReason() {
+  if (_dialogService.isNull()) {
+    qCritical()
+        << "Tried to inform the user that the execution failed because of some "
+           "intrnal programming fault, but the dialog service is null";
+    return;
+  }
+  _dialogService->addExecutionFailedForInternalReason();
+}
+
+void EditorModel::disconnectVirtualMachineService() {
+  if (_virtualMachineService.isNull()) {
+    return;
+  }
+  disconnect(_virtualMachineService, nullptr, this, nullptr);
+}
+
+void EditorModel::handleExecutionCompleted() {
+  qInfo() << "Execution completed";
+  setExecutionState(ExecutionState::Idle);
+}
+
+void EditorModel::setRunningMode(RunningMode runningMode) {
+  if (_runningMode != runningMode) {
+    _runningMode = runningMode;
+    emit runningModeChanged(runningMode);
+  }
+}
+
+EditorModel::RunningMode EditorModel::runningMode() const {
+  return _runningMode;
+}
+
+int EditorModel::cursorPositionAt(int index) const {
+  const auto tabOptional = tabAt(index);
+  if (!tabOptional.has_value() || tabOptional.value().isNull()) {
+    return 0;
+  }
+  const auto tab = tabOptional.value();
+  return tab->cursorPosition();
+}
+
+int EditorModel::cursorLineNumberAt(int index) const {
+  const auto tabOptional = tabAt(index);
+  if (!tabOptional.has_value() || tabOptional.value().isNull()) {
+    return 1;
+  }
+  const auto tab = tabOptional.value();
+  return tab->cursorLineNumber();
+}
+
+bool positionOutOfRange(QPointer<QTextDocument> textDocument, int position) {
+  if (textDocument.isNull() || position < 0) {
+    return true;
+  }
+  QTextBlock lastBlock = textDocument->lastBlock();
+  const int lastPosition =
+      qMax(lastBlock.position(), lastBlock.position() + lastBlock.length() - 1);
+  return position > lastPosition;
+}
+
+bool EditorModel::setCursorPositionAt(int index, int position) {
+  const auto tabOptional = tabAt(index);
+  if (!tabOptional.has_value() || tabOptional.value().isNull()) {
+    return false;
+  }
+  auto tab = tabOptional.value();
+  if (tab->cursorPosition() == position || position < 0) {
+    return false;
+  }
+  if (tab->textDocument().isNull() || tab->textDocument()->isEmpty()) {
+    const bool changed = tab->cursorPosition() != 0;
+    tab->setCursorPosition(0);
+    return changed;
+  }
+  const auto textDocument = tab->textDocument();
+  if (positionOutOfRange(textDocument, position)) {
+    return false;
+  }
+  tab->setCursorPosition(position);
+  return true;
+}
+
+void EditorModel::updateLineNumberFromCursorPositionAt(int index) {
+  const auto tabOptional = tabAt(index);
+  if (!tabOptional.has_value() || tabOptional.value().isNull()) {
+    return;
+  }
+  auto tab = tabOptional.value();
+  const int cursorPosition = tab->cursorPosition();
+  const auto textDocument = tab->textDocument();
+  if (textDocument.isNull() ||
+      positionOutOfRange(textDocument, cursorPosition)) {
+    return;
+  }
+  if (cursorPosition == 0) {
+    setLineNumberAt(index, 1);
+    return;
+  }
+  const QTextBlock block = textDocument->findBlock(cursorPosition);
+  setLineNumberAt(index, block.blockNumber() + 1);
+}
+
+void EditorModel::updateCursorPositionFromLineNumberAt(int index) {
+  const auto tabOptional = tabAt(index);
+  if (!tabOptional.has_value() || tabOptional.value().isNull()) {
+    return;
+  }
+  auto tab = tabOptional.value();
+  const int lineNumber = tab->cursorLineNumber();
+  const auto textDocument = tab->textDocument();
+  if (textDocument.isNull() || lineNumber > textDocument->blockCount()) {
+    return;
+  }
+  const QTextBlock block = textDocument->findBlockByNumber(lineNumber);
+  setCursorPositionWithDisplayRoleAt(index, block.position());
+  setCursorPositionWithEditRoleAt(index, block.position());
+}
+
+bool EditorModel::setCursorPositionVariantAt(int index, const QVariant& value,
+                                             int role) {
+  if (value.isValid() && value.canConvert<int>()) {
+    const int position = value.toInt();
+    switch (role) {
+      case CursorPositionRole:
+        setCursorPositionWithDisplayRoleAt(index, position);
+        updateLineNumberFromCursorPositionAt(index);
+        return true;
+      case CursorPositionEditRole:
+        setCursorPositionWithEditRoleAt(index, position);
+        updateLineNumberFromCursorPositionAt(index);
+        return true;
+      default:
+        return false;
+    }
+  }
+  return false;
+}
+
+void EditorModel::setCursorPositionWithEditRoleAt(int index, int position) {
+  setCursorPositionWithRoleAt(index, position, CursorPositionEditRole);
+}
+
+void EditorModel::setCursorPositionWithDisplayRoleAt(int index, int position) {
+  setCursorPositionWithRoleAt(index, position, CursorPositionRole);
+}
+
+void EditorModel::setCursorPositionWithRoleAt(int index, int position,
+                                              EditorModelRole role) {
+  const bool positionChanged = setCursorPositionAt(index, position);
+  if (positionChanged) {
+    const QModelIndex modelIndex = createIndex(index, 0);
+    emit dataChanged(modelIndex, modelIndex, {role});
+  }
+}
+
+bool EditorModel::setLineNumberAt(int index, int lineNumber) {
+  const auto tabOptional = tabAt(index);
+  if (!tabOptional.has_value() || tabOptional.value().isNull()) {
+    return false;
+  }
+  auto tab = tabOptional.value();
+  if (tab->cursorLineNumber() == lineNumber || lineNumber < 1) {
+    return false;
+  }
+  tab->setCursorLineNumber(lineNumber);
+  const QModelIndex modelIndex = createIndex(index, 0);
+  emit dataChanged(modelIndex, modelIndex, {CursorLineNumberRole});
+  return true;
+}
+
+void EditorModel::startExecutionStateTimer() {
+  switch (_executionState) {
+    case ExecutionState::Compiling:
+      _executionStateTimer.setInterval(_compilationTimeoutMs);
+      break;
+    case ExecutionState::Executing:
+      _executionStateTimer.setInterval(_executionTimeoutMs);
+      break;
+    default:
+      return;
+  }
+  _executionStateTimer.setSingleShot(true);
+  _executionStateTimer.start();
+}
+
+int EditorModel::executionTimeoutMs() const { return _executionTimeoutMs; }
+
+void EditorModel::setExecutionTimeoutMs(int value) {
+  if (_executionTimeoutMs != value) {
+    _executionTimeoutMs = value;
+    emit executionTimeoutMsChanged();
+  }
+}
+
+int EditorModel::compilationTimeoutMs() const { return _compilationTimeoutMs; }
+
+void EditorModel::setCompilationTimeoutMs(int value) {
+  if (_compilationTimeoutMs != value) {
+    _compilationTimeoutMs = value;
+    emit compilationTimeoutMsChanged();
+  }
+}
+
+void EditorModel::setExecutionState(ExecutionState executionState) {
+  if (_executionState != executionState) {
+    _executionState = executionState;
+    emit executionStateChanged();
+  }
+}
+
+void EditorModel::handleVirtualMachineVariableStateChanged() {
+  if (_executionState == ExecutionState::Executing) {
+    setExecutionState(ExecutionState::Halt);
+  }
+}
+
+ExecutionState EditorModel::executionState() const { return _executionState; }

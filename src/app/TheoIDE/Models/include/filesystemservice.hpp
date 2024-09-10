@@ -1,16 +1,14 @@
 #ifndef _THEOIDE_MODELS_FILESYSTEMSERVICE_
 #define _THEOIDE_MODELS_FILESYSTEMSERVICE_
 
-#include <qcontainerfwd.h>
-#include <qdir.h>
-#include <qfuture.h>
-#include <qmutex.h>
-#include <qobject.h>
-#include <qpointer.h>
-#include <qpropertyprivate.h>
-#include <qqmlintegration.h>
-#include <qsharedpointer.h>
-#include <qtmetamacros.h>
+#include <QDir>
+#include <QFile>
+#include <QFuture>
+#include <QMutex>
+#include <QObject>
+#include <QPointer>
+#include <QSharedPointer>
+#include <QtQmlIntegration>
 
 class FileError : public std::exception {
  public:
@@ -121,8 +119,8 @@ class FileSystemService : public QObject {
 
  private:
   mutable QMutex _filesBeingReadMutex;
-  int _maxFileSizeBytes;
-  int _blockSizeBytes;
+  int _maxFileSizeBytes = 0;
+  int _blockSizeBytes = 0;
   QList<QSharedPointer<QFile>> _filesBeingRead;
   QString readFileSync(QSharedPointer<QFile> file) const;
   QFuture<QString> readFileAsync(QSharedPointer<QFile> file) const;

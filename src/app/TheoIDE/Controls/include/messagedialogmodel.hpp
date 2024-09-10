@@ -1,9 +1,12 @@
 #ifndef _THEOIDE_CONTROLS_MESSAGEDIALOGMODEL_
 #define _THEOIDE_CONTROLS_MESSAGEDIALOGMODEL_
 
-#include <qjsvalue.h>
-#include <qpointer.h>
-#include <qtmetamacros.h>
+#include <QObject>
+#include <QPointer>
+#include <QSharedPointer>
+#include <QString>
+#include <QVariantList>
+#include <QtQmlIntegration>
 
 #include "dialogbutton.hpp"
 #include "dialogservice.hpp"
@@ -52,7 +55,7 @@ class MessageDialogModel : public QObject {
  private:
   QPointer<DialogService> _dialogService;
   QSharedPointer<MessageDialogDTO> _messageDialogDTO;
-  bool _open;
+  bool _open = false;
   void disconnectDialogService();
   void connectDialogService();
 };

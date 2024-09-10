@@ -1,18 +1,7 @@
-#include "filesystemservice.hpp"
-
-#include <qcontainerfwd.h>
-#include <qdebug.h>
-#include <qdir.h>
-#include <qfiledevice.h>
-#include <qfuture.h>
-#include <qfuturewatcher.h>
-#include <qlist.h>
-#include <qmutex.h>
-#include <qpromise.h>
-#include <qsharedpointer.h>
-#include <qtconcurrentrun.h>
-
+#include <QtConcurrentRun>
 #include <exception>
+
+#include "filesystemservice.hpp"
 
 const int DEFAULT_MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024;
 const int DEFAULT_BLOCK_SIZE_BYTES = 1024;
@@ -106,7 +95,7 @@ void FileSystemService::ensureFileExists(QSharedPointer<QFile> file) const {
 QString FileSystemService::readFileSync(QSharedPointer<QFile> file) const {
   FileAutoCloser fileCloser(file.data());
   openFileReadable(file);
-  unsigned int bytesRead = 0;
+  int bytesRead = 0;
   QByteArray content;
   while (!file->atEnd()) {
     if (bytesRead > maxFileSizeBytes()) {

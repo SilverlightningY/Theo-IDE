@@ -15,6 +15,7 @@ qt_add_qml_module(
         PlainTextEditor.qml
         ResultTable.qml
         TabContent.qml
+        TableCell.qml
     URI TheoIDE.Controls
     IMPORTS
         QtQuick
@@ -25,6 +26,8 @@ qt_add_qml_module(
         editormodel.cpp include/editormodel.hpp
         lineinfocolumnmodel.cpp include/lineinfocolumnmodel.hpp
         messagedialogmodel.cpp include/messagedialogmodel.hpp
+        variablesstatemodel.cpp include/variablesstatemodel.hpp
+        executionstate.cpp include/executionstate.hpp
 )
 
 target_include_directories(

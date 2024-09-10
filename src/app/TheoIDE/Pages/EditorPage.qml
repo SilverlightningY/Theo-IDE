@@ -11,6 +11,101 @@ Page {
 
     required property EditorModel model
 
+    states: [
+        State {
+            name: "debugging"
+            when: root.model.executionState !== ExecutionState.Idle && root.model.runningMode === EditorModel.Debug
+            extend: "running"
+            PropertyChanges {
+                secondaryActionButton {
+                    action: stopExecutionAction
+                }
+                primaryActionButton {
+                    action: runScriptAction
+                }
+            }
+        },
+        State {
+            name: "running"
+            when: root.model.executionState !== ExecutionState.Idle && root.model.runningMode === EditorModel.Default
+            PropertyChanges {
+                primaryActionButton {
+                    action: stopExecutionAction
+                }
+                openFileAction {
+                    enabled: false
+                }
+                runScriptAction {
+                    enabled: false
+                }
+                debugScriptAction {
+                    enabled: false
+                }
+                createFileAction {
+                    enabled: false
+                }
+            }
+        }
+    ]
+
+    Action {
+        id: openFileAction
+        icon.name: "file_open"
+        text: qsTr("Open File")
+        onTriggered: fileOpenDialog.open()
+    }
+
+    Action {
+        id: stopExecutionAction
+        icon.name: "stop"
+        text: qsTr("Stop Execution")
+        onTriggered: root.model.stopExecution()
+    }
+
+    Action {
+        id: saveAllFilesAction
+        icon.name: "save"
+        text: qsTr("Save All")
+        shortcut: StandardKey.Save
+        onTriggered: root.model.saveAllTabs()
+    }
+
+    Action {
+        id: runScriptAction
+        icon.name: "play_arrow"
+        text: qsTr("Run")
+        shortcut: "F12"
+        onTriggered: root.model.runScript()
+    }
+
+    Action {
+        id: debugScriptAction
+        icon.name: "bug_report"
+        text: qsTr("Debug")
+        shortcut: "F11"
+        onTriggered: root.model.runScriptInDebugMode()
+    }
+
+    Action {
+        id: openMoreActionsMenuAction
+        icon.name: "more_vert"
+        text: qsTr("Open More Actions")
+        onTriggered: moreActionsMenu.open()
+    }
+
+    Action {
+        id: createFileAction
+        icon.name: "add"
+        text: qsTr("Create File")
+        onTriggered: root.model.createNewTab()
+    }
+
+    Action {
+        id: openSettingsAction
+        icon.name: "settings"
+        text: qsTr("Open Settings")
+    }
+
     header: ToolBar {
         id: headerToolBar
 
@@ -19,57 +114,6 @@ Page {
         rightPadding: showMoreActionMenu ? 0 : 14
 
         readonly property bool showMoreActionMenu: width < 480
-
-        Action {
-            id: openFileAction
-            icon.name: "file_open"
-            text: qsTr("Open File")
-            onTriggered: fileOpenDialog.open()
-        }
-
-        Action {
-            id: saveAllFilesAction
-            icon.name: "save"
-            text: qsTr("Save All")
-            shortcut: StandardKey.Save
-            onTriggered: root.model.saveAllTabs()
-        }
-
-        Action {
-            id: runApplicationAction
-            icon.name: "play_arrow"
-            text: qsTr("Run")
-            shortcut: "F12"
-            onTriggered: root.model.runScript()
-        }
-
-        Action {
-            id: debugApplicationAction
-            icon.name: "bug_report"
-            text: qsTr("Debug")
-            shortcut: "F11"
-            onTriggered: root.model.runScriptInDebugMode()
-        }
-
-        Action {
-            id: openMoreActionsMenuAction
-            icon.name: "more_vert"
-            text: qsTr("Open More Actions")
-            onTriggered: moreActionsMenu.open()
-        }
-
-        Action {
-            id: createFileAction
-            icon.name: "add"
-            text: qsTr("Create File")
-            onTriggered: root.model.createNewTab()
-        }
-
-        Action {
-            id: openSettingsAction
-            icon.name: "settings"
-            text: qsTr("Open Settings")
-        }
 
         RowLayout {
             anchors.fill: parent
@@ -117,7 +161,8 @@ Page {
 
             // Primary Action
             ToolButton {
-                action: runApplicationAction
+                id: primaryActionButton
+                action: runScriptAction
                 display: AbstractButton.IconOnly
                 ToolTip.visible: hovered
                 ToolTip.text: text
@@ -126,7 +171,8 @@ Page {
             }
             // Secondary Action
             ToolButton {
-                action: debugApplicationAction
+                id: secondaryActionButton
+                action: debugScriptAction
                 display: AbstractButton.IconOnly
                 ToolTip.visible: hovered
                 ToolTip.text: text
@@ -176,7 +222,7 @@ Page {
     SplitView {
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: statusBar.top
+        anchors.bottom: parent.bottom
         anchors.top: parent.top
         orientation: width < 900 ? Qt.Vertical : Qt.Horizontal
 
@@ -193,14 +239,6 @@ Page {
             SplitView.preferredHeight: 200
             model: root.model
         }
-    }
-
-    Rectangle {
-        id: statusBar
-        height: 24
-        width: parent.width
-        anchors.bottom: parent.bottom
-        color: ApplicationSettings.primary
     }
 
     FileDialog {

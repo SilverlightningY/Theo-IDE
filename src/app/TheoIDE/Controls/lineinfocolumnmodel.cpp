@@ -1,4 +1,5 @@
-#include <QQuickTextDocument>
+#include <qtpreprocessorsupport.h>
+
 #include <QtLogging>
 
 #include "lineinfocolumnmodel.hpp"
@@ -92,10 +93,12 @@ bool LineInfoColumnModel::setData(const QModelIndex& index,
 }
 
 int LineInfoColumnModel::rowCount(const QModelIndex& parent) const {
+  Q_UNUSED(parent)
   return lineCount();
 }
 
 Qt::ItemFlags LineInfoColumnModel::flags(const QModelIndex& index) const {
+  Q_UNUSED(index)
   return Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsEditable |
          Qt::ItemFlag::ItemIsSelectable | Qt::ItemFlag::ItemNeverHasChildren;
 }
