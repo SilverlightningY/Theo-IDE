@@ -1,11 +1,11 @@
-#include "virtualmachineservice.hpp"
-
 #include <qtpreprocessorsupport.h>
 
 #include <QFutureWatcher>
 #include <QtConcurrentRun>
 #include <QtLogging>
 #include <exception>
+
+#include "virtualmachineservice.hpp"
 
 VirtualMachineService::VirtualMachineService(QObject* parent)
     : QObject(parent) {}

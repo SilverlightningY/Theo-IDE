@@ -1,7 +1,7 @@
-#include "filesystemservice.hpp"
-
 #include <QtConcurrentRun>
 #include <exception>
+
+#include "filesystemservice.hpp"
 
 const int DEFAULT_MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024;
 const int DEFAULT_BLOCK_SIZE_BYTES = 1024;

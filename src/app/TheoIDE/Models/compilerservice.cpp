@@ -1,11 +1,10 @@
-#include "compilerservice.hpp"
-
 #include <QtConcurrentRun>
 #include <functional>
 #include <map>
 #include <string>
 
 #include "compiler.hpp"
+#include "compilerservice.hpp"
 #include "gen.hpp"
 #include "scan.hpp"
 

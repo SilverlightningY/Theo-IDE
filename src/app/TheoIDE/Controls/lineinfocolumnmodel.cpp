@@ -1,8 +1,8 @@
-#include "lineinfocolumnmodel.hpp"
-
 #include <qtpreprocessorsupport.h>
 
 #include <QtLogging>
+
+#include "lineinfocolumnmodel.hpp"
 
 LineInfoColumnModel::LineInfoColumnModel(QObject* parent)
     : QAbstractListModel(parent) {}

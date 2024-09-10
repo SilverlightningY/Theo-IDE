@@ -1,29 +1,17 @@
-#include "dialogservice.hpp"
-
 #include <qtpreprocessorsupport.h>
 
 #include <QtLogging>
 #include <optional>
 
 #include "dialogbutton.hpp"
+#include "dialogservice.hpp"
 
 DialogService::DialogService(QObject* parent) : QObject(parent) {}
 DialogService::~DialogService() {}
 
 void DialogService::add(QSharedPointer<MessageDialogDTO> dto) {
-#ifdef THEOIDE_MESSAGE_DIALOG_SUPPORTED
   _dialogDTOs.append(dto);
   emit elementAdded();
-#else
-  qWarning() << "Message dialog is not supported on this platform.";
-  qInfo() << "The following message would have been displayed and was accepted:"
-          << Qt::endl
-          << "Title:" << dto->title() << Qt::endl
-          << "Text: " << dto->text() << Qt::endl
-          << "Informative text:" << dto->informativeText() << Qt::endl
-          << "Detailed text:" << dto->detailedText();
-  dto->runMainCallback();
-#endif
 }
 
 std::optional<QSharedPointer<MessageDialogDTO>> DialogService::remove() {
@@ -77,15 +65,14 @@ void DialogService::addMaxReadFileSizeExceeded(const QString& fileName,
                                                const int maxFileSizeBytes) {
   const QString title = tr("Reading aborted");
   const QString text = tr("Reading of file %1 was aborted because the "
-                          "maximum read size has been exceeded")
-                           .arg(fileName);
-  const QString detailedText =
-      tr("The maximum read size is set to %1 bytes").arg(maxFileSizeBytes);
+                          "maximum read size of %2 bytes has been exceeded.")
+                           .arg(fileName)
+                           .arg(maxFileSizeBytes);
   const QString informativeText =
       tr("If you realy want to open such a large file, increase the maxiumum "
          "read size in the settings.");
   auto dto = QSharedPointer<MessageDialogDTO>(
-      new MessageDialogDTO(title, text, detailedText, informativeText));
+      new MessageDialogDTO(title, text, std::nullopt, informativeText));
   dto->setButton(DialogButton::Ok);
   add(dto);
 }
@@ -131,7 +118,8 @@ void DialogService::addCompilationFailed(const Theo::CodegenResult& result) {
   const QString text =
       tr("The compilation process failed because of syntactic errors in the "
          "source.");
-  const QString informativeText = tr("Please check your input carefully.");
+  QString informativeText =
+      tr("Please check your input carefully. Following errors detected: ");
   QString detailedText;
   for (auto error : result.errors) {
     const QString line = QString("[%1] in '%2', line %3 '%4'\n")
@@ -141,8 +129,10 @@ void DialogService::addCompilationFailed(const Theo::CodegenResult& result) {
                              .arg(QString::fromStdString(error.message));
     detailedText.append(line);
   }
+  informativeText.append(detailedText);
+  informativeText.truncate(500);
   auto dto = QSharedPointer<MessageDialogDTO>(
-      new MessageDialogDTO(title, text, detailedText, informativeText));
+      new MessageDialogDTO(title, text, std::nullopt, informativeText));
   dto->setButton(DialogButton::Ok);
   add(dto);
 }
