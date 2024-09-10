@@ -67,12 +67,16 @@ Item {
         property int blockSizeBytes: 1024
         property int tabStopDistanceInSpaces: 3
         property bool expandTabsToSpaces: false
+        property int compilationTimeoutMs: 5000
+        property int executionTimeoutMs: 5000
     }
 
     property alias maxReadFileSizeBytes: generalSettings.maxReadFileSizeBytes
     property alias blockSizeBytes: generalSettings.blockSizeBytes
     property alias tabStopDistanceInSpaces: generalSettings.tabStopDistanceInSpaces
     property alias expandTabsToSpaces: generalSettings.expandTabsToSpaces
+    property alias compilationTimeoutMs: generalSettings.compilationTimeoutMs
+    property alias executionTimeoutMs: generalSettings.executionTimeoutMs
 
     readonly property int tabStopDistance: SystemFontConfiguraton.calculateSpaceWidthOfFont(editorFont) * tabStopDistanceInSpaces
 

@@ -55,6 +55,8 @@ ApplicationWindow {
                 dialogService: root.dialogService
                 compilerService: root.compilerService
                 virtualMachineService: root.virtualMachineService
+                compilationTimeoutMs: ApplicationSettings.compilationTimeoutMs
+                executionTimeoutMs: ApplicationSettings.executionTimeoutMs
             }
         }
     }
