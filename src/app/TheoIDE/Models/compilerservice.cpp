@@ -1,10 +1,11 @@
+#include "compilerservice.hpp"
+
 #include <QtConcurrentRun>
 #include <functional>
 #include <map>
 #include <string>
 
 #include "compiler.hpp"
-#include "compilerservice.hpp"
 #include "gen.hpp"
 #include "scan.hpp"
 
@@ -62,13 +63,11 @@ void CompilerService::setResult(QSharedPointer<CompilationResult> result) {
 std::map<std::string, std::string> CompilerService::convertContentToStdMap(
     const QMap<QString, QString>& map) {
   std::map<std::string, std::string> result;
-  std::map<std::string, std::string>::iterator it = result.begin();
   for (auto pair : map.asKeyValueRange()) {
     const std::string key = pair.first.toStdString();
     const std::string value = pair.second.toStdString();
     const std::pair<std::string, std::string> convertedPair(key, value);
-    result.insert(it, convertedPair);
-    ++it;
+    result.insert(convertedPair);
   }
   return result;
 }
