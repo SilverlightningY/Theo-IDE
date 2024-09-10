@@ -222,7 +222,6 @@ class EditorModel : public QAbstractListModel {
   void handleCompilationRevisionAvailable(int revision);
   void handleExecutionCompleted();
   void displayExecutionFailedForInternalReason();
-  void updateRevision();
   void handleVirtualMachineVariableStateChanged();
 
  private:
