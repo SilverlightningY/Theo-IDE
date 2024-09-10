@@ -1,4 +1,4 @@
-import QtQuick.Dialogs
+import Qt.labs.platform
 import TheoIDE.Models
 import TheoIDE.Controls
 
@@ -13,7 +13,7 @@ MessageDialog {
     detailedText: model.detailedText
     buttons: dialogButtonsToMessageDialogFlags(model.dialogButtons)
 
-    onButtonClicked: function (dialogFlag, role) {
+    onClicked: function (dialogFlag) {
         model.runButtonAction(dialogFlagToDialogButton(dialogFlag));
     }
 

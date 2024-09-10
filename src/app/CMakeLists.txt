@@ -52,6 +52,7 @@ target_link_libraries(
         Qt6::Sql
         Qt6::Svg
         Qt6::Qml
+        Qt6::Widgets
 )
 
 install(

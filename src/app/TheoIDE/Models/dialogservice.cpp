@@ -11,19 +11,8 @@ DialogService::DialogService(QObject* parent) : QObject(parent) {}
 DialogService::~DialogService() {}
 
 void DialogService::add(QSharedPointer<MessageDialogDTO> dto) {
-#ifdef THEOIDE_MESSAGE_DIALOG_SUPPORTED
   _dialogDTOs.append(dto);
   emit elementAdded();
-#else
-  qWarning() << "Message dialog is not supported on this platform.";
-  qInfo() << "The following message would have been displayed and was accepted:"
-          << Qt::endl
-          << "Title:" << dto->title() << Qt::endl
-          << "Text: " << dto->text() << Qt::endl
-          << "Informative text:" << dto->informativeText() << Qt::endl
-          << "Detailed text:" << dto->detailedText();
-  dto->runMainCallback();
-#endif
 }
 
 std::optional<QSharedPointer<MessageDialogDTO>> DialogService::remove() {
