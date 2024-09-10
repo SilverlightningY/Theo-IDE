@@ -55,7 +55,7 @@ class MessageDialogModel : public QObject {
  private:
   QPointer<DialogService> _dialogService;
   QSharedPointer<MessageDialogDTO> _messageDialogDTO;
-  bool _open;
+  bool _open = false;
   void disconnectDialogService();
   void connectDialogService();
 };

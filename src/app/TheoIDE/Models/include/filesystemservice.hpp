@@ -119,8 +119,8 @@ class FileSystemService : public QObject {
 
  private:
   mutable QMutex _filesBeingReadMutex;
-  int _maxFileSizeBytes;
-  int _blockSizeBytes;
+  int _maxFileSizeBytes = 0;
+  int _blockSizeBytes = 0;
   QList<QSharedPointer<QFile>> _filesBeingRead;
   QString readFileSync(QSharedPointer<QFile> file) const;
   QFuture<QString> readFileAsync(QSharedPointer<QFile> file) const;

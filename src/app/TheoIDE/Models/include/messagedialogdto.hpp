@@ -34,8 +34,8 @@ class MessageDialogDTO {
  private:
   QString _text;
   QString _title;
-  DialogModelText _detailedText;
-  DialogModelText _informativeText;
+  DialogModelText _detailedText = std::nullopt;
+  DialogModelText _informativeText = std::nullopt;
   std::optional<DialogButton> _mainActionButton;
   QMap<DialogButton, DialogModelCallback> _buttonCallbacks;
 };
