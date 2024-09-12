@@ -5,10 +5,20 @@ project(TheoIDE VERSION 0.1.0 LANGUAGES CXX)
 set(QT_VERSION 6.7)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
+set(CPACK_PACKAGE_EXECUTABLES TheoIDEApp;TheoIDE)
+
+# debian package settings
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxcb-cursor0")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "")
+
+# msi installer settings
+set(CPACK_WIX_UPGRADE_GUID "A9C4B57E-8F8A-4765-B3B9-FD96DC587C01")
+
+
+set(CMAKE_PREFIX_PATH D:/Qt/6.7.2/msvc2019_64/lib/cmake)
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
@@ -52,11 +62,3 @@ endif()
 
 add_subdirectory(src/libtheo)
 add_subdirectory(src/app)
-
-qt_generate_deploy_qml_app_script(TARGET TheoIDEApp
-    OUTPUT_SCRIPT deploy_script
-    NO_UNSUPPORTED_PLATFORM_ERROR
-    DEPLOY_USER_QML_MODULES_ON_UNSUPPORTED_PLATFORM
-    MACOS_BUNDLE_POST_BUILD
-)
-install(SCRIPT ${deploy_script})
