@@ -62,11 +62,3 @@ endif()
 
 add_subdirectory(src/libtheo)
 add_subdirectory(src/app)
-
-qt_generate_deploy_qml_app_script(TARGET TheoIDEApp
-    OUTPUT_SCRIPT deploy_script
-    NO_UNSUPPORTED_PLATFORM_ERROR
-    DEPLOY_USER_QML_MODULES_ON_UNSUPPORTED_PLATFORM
-    MACOS_BUNDLE_POST_BUILD
-)
-install(SCRIPT ${deploy_script})
