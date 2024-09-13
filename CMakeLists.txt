@@ -17,9 +17,6 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER "")
 # msi installer settings
 set(CPACK_WIX_UPGRADE_GUID "A9C4B57E-8F8A-4765-B3B9-FD96DC587C01")
 
-
-set(CMAKE_PREFIX_PATH D:/Qt/6.7.2/msvc2019_64/lib/cmake)
-
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
 include(CPack)
