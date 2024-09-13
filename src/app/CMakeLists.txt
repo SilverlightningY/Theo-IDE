@@ -24,7 +24,7 @@ qt_add_qml_module(TheoIDEApp
 set_target_properties(
     TheoIDEApp
     PROPERTIES
-        MACOSX_BUNDLE_GUI_IDENTIFIER io.github.Theo_IDE.Theo_IDE
+        MACOSX_BUNDLE_GUI_IDENTIFIER io.github.Theo-IDE.Theo-IDE
         MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
         MACOSX_BUNDLE_SHORT_VERSION_STRING
             ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
