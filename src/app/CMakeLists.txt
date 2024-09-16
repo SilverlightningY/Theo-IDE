@@ -1,7 +1,8 @@
 set(APP_SOURCES main.cpp)
+set(app_icon_resource_windows icons/appicon/AppIcon-Windows.rc)
 qt_add_resources(APP_SOURCES icons/icons.qrc)
 
-qt_add_executable(TheoIDEApp ${APP_SOURCES})
+qt_add_executable(TheoIDEApp ${APP_SOURCES} ${app_icon_resource_windows})
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
     target_compile_definitions(TheoIDEApp PRIVATE QT_QML_DEBUG)
