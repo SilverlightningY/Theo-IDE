@@ -1,8 +1,14 @@
 set(APP_SOURCES main.cpp)
-set(app_icon_resource_windows icons/appicon/AppIcon-Windows.rc)
+set(MACOSX_BUNDLE_ICON_FILE AppIcon.icns)
+set(app_icon_windows icons/appicon/AppIcon-Windows.rc)
+set(app_icon_macos "icons/appicon/AppIcon.icns")
+
+set_source_files_properties(${app_icon_macos} PROPERTIES
+           MACOSX_PACKAGE_LOCATION "Resources")
+
 qt_add_resources(APP_SOURCES icons/icons.qrc)
 
-qt_add_executable(TheoIDEApp ${APP_SOURCES} ${app_icon_resource_windows})
+qt_add_executable(TheoIDEApp ${APP_SOURCES} ${app_icon_macos} ${app_icon_windows})
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
     target_compile_definitions(TheoIDEApp PRIVATE QT_QML_DEBUG)

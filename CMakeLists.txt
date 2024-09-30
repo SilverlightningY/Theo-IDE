@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
+set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "")
+
 project(TheoIDE VERSION 0.1.0 LANGUAGES CXX)
 
 set(QT_VERSION 6.7)
